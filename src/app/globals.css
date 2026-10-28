@@ -1,0 +1,191 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Tema: base blanco/negro puro con acentos "filamento" (cian, violeta, magenta, lima).
+ * Los tokens siguen la convención de shadcn/ui, así `npx shadcn add` funciona sin tocar nada.
+ */
+:root {
+  --radius: 0.875rem;
+
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.55 0.26 288);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.96 0.01 288);
+  --secondary-foreground: oklch(0.25 0.05 288);
+  --muted: oklch(0.965 0 0);
+  --muted-foreground: oklch(0.48 0 0);
+  --accent: oklch(0.88 0.21 128);
+  --accent-foreground: oklch(0.2 0.05 128);
+  --destructive: oklch(0.6 0.24 25);
+  --border: oklch(0.9 0 0);
+  --input: oklch(0.9 0 0);
+  --ring: oklch(0.55 0.26 288);
+
+  /* Colores de marca: los "filamentos" */
+  --brand-cyan: oklch(0.72 0.17 220);
+  --brand-violet: oklch(0.55 0.26 288);
+  --brand-magenta: oklch(0.63 0.27 350);
+  --brand-lime: oklch(0.88 0.21 128);
+
+  /* Sombra extruida: el borde "duro" que da el efecto 3D */
+  --extrude: oklch(0.145 0 0);
+  --glow: oklch(0.55 0.26 288 / 0.25);
+  --grid-line: oklch(0.145 0 0 / 0.07);
+}
+
+.dark {
+  --background: oklch(0 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.12 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.12 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.7 0.22 292);
+  --primary-foreground: oklch(0.1 0 0);
+  --secondary: oklch(0.2 0.03 288);
+  --secondary-foreground: oklch(0.95 0.02 288);
+  --muted: oklch(0.18 0 0);
+  --muted-foreground: oklch(0.7 0 0);
+  --accent: oklch(0.9 0.22 128);
+  --accent-foreground: oklch(0.15 0.04 128);
+  --destructive: oklch(0.68 0.22 22);
+  --border: oklch(1 0 0 / 0.14);
+  --input: oklch(1 0 0 / 0.18);
+  --ring: oklch(0.7 0.22 292);
+
+  --brand-cyan: oklch(0.8 0.15 215);
+  --brand-violet: oklch(0.7 0.22 292);
+  --brand-magenta: oklch(0.72 0.24 350);
+  --brand-lime: oklch(0.9 0.22 128);
+
+  --extrude: oklch(0.7 0.22 292);
+  --glow: oklch(0.7 0.22 292 / 0.35);
+  --grid-line: oklch(1 0 0 / 0.08);
+}
+
+@theme inline {
+  --font-sans: var(--font-geist);
+  --font-display: var(--font-space-grotesk);
+  --font-mono: var(--font-geist-mono);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-brand-cyan: var(--brand-cyan);
+  --color-brand-violet: var(--brand-violet);
+  --color-brand-magenta: var(--brand-magenta);
+  --color-brand-lime: var(--brand-lime);
+  --color-extrude: var(--extrude);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply scroll-smooth;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-display tracking-tight;
+  }
+}
+
+/* Texto con degradé de filamento */
+@utility text-filament {
+  background-image: linear-gradient(
+    100deg,
+    var(--brand-cyan),
+    var(--brand-violet) 45%,
+    var(--brand-magenta)
+  );
+  background-clip: text;
+  color: transparent;
+}
+
+@utility bg-filament {
+  background-image: linear-gradient(
+    100deg,
+    var(--brand-cyan),
+    var(--brand-violet) 45%,
+    var(--brand-magenta)
+  );
+}
+
+/* Sombra sólida desplazada: parece una pieza extruida */
+@utility shadow-extrude {
+  box-shadow: 5px 5px 0 0 var(--extrude);
+}
+@utility shadow-extrude-sm {
+  box-shadow: 3px 3px 0 0 var(--extrude);
+}
+@utility shadow-glow {
+  box-shadow:
+    0 0 0 1px var(--border),
+    0 20px 60px -20px var(--glow);
+}
+
+/* Cama de impresión: grilla en perspectiva */
+@utility print-bed {
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Tarjeta que se inclina al pasar el mouse */
+@utility tilt-card {
+  transform-style: preserve-3d;
+  transition:
+    transform 300ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 300ms ease;
+  &:hover {
+    transform: perspective(900px) rotateX(4deg) rotateY(-6deg) translateY(-4px);
+    box-shadow: 10px 12px 0 0 var(--extrude);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    &:hover {
+      transform: none;
+    }
+  }
+}
+
+model-viewer {
+  --poster-color: transparent;
+  --progress-bar-color: var(--brand-violet);
+  width: 100%;
+  height: 100%;
+}

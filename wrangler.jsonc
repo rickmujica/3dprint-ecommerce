@@ -1,0 +1,33 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "main": ".open-next/worker.js",
+  "name": "3dprint-ecommerce",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    {
+      // Autorreferencia que usa OpenNext para revalidar; el nombre debe coincidir con "name".
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "3dprint-ecommerce"
+    }
+  ],
+  "r2_buckets": [
+    {
+      // Modelos 3D, miniaturas y fotos de pedidos.
+      // public/  -> se sirve en /files/... (GLB y miniaturas)
+      // private/ -> nunca se sirve (STL originales, fotos de referencia)
+      "binding": "MODELS",
+      "bucket_name": "3dprint-models"
+    },
+    {
+      // Caché de páginas de Next.js (ISR / "use cache").
+      "binding": "NEXT_INC_CACHE_R2_BUCKET",
+      "bucket_name": "3dprint-ecommerce-opennext-cache"
+    }
+  ],
+  "observability": { "enabled": true }
+}
