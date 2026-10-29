@@ -1,0 +1,2 @@
+# Copiá este archivo a .dev.vars para `npm run preview` (wrangler).
+NEXTJS_ENV=development
