@@ -93,6 +93,8 @@ scripts/                 generadores de los modelos y miniaturas demo
 - **Archivos en R2**: `public/…` se sirve por `/files/…` con caché larga; `private/…` (STL originales y fotos de clientes) solo lo descarga un admin.
 - **Caché**: el catálogo usa `"use cache"` con la etiqueta `models`. Al crear o publicar un modelo desde el admin se invalida solo.
 - **Modelos de terceros**: no scrapear Thingiverse/Printables/MakerWorld (lo prohíben sus términos). Cargalos a mano con licencia y autor.
+- **Dónde conseguir modelos para vender impresos**: [Printables](https://www.printables.com) y [Thingiverse](https://www.thingiverse.com) permiten filtrar por licencia (buscá CC0, CC BY o CC BY-SA; evitá las "NC"). [Smithsonian Open Access](https://3d.si.edu) y [NASA 3D Resources](https://science.nasa.gov/3d-resources/) tienen escaneos y modelos de dominio público. En MakerWorld y Cults revisá la licencia de cada modelo, varios permiten venta solo con permiso del autor.
+- **Modelos demo**: `npm run demo-models` genera los GLB de `public/demo` por código. Las miniaturas salen de `node scripts/capture-demo-thumbnails.mjs` con el sitio corriendo.
 - **Sin pagos online todavía**: el flujo es cotizar y coordinar por WhatsApp.
 
 ## Próximos pasos sugeridos
