@@ -2,6 +2,7 @@
 // Uso: npm run demo-models
 import { writeFileSync, mkdirSync } from "node:fs";
 import * as THREE from "three";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
 const OUT = new URL("../public/demo/", import.meta.url);
 mkdirSync(OUT, { recursive: true });
@@ -72,7 +73,8 @@ function writeGlb(name, geometry, color, { roughness = 0.55, metalness = 0, flat
   };
   const glb = Buffer.concat([header, chunk(0x4e4f534a, json), chunk(0x004e4942, binPadded)]);
   writeFileSync(new URL(`${name}.glb`, OUT), glb);
-  console.log(`${name}.glb  ${(glb.length / 1024).toFixed(1)} KB`);
+  const mm = (v) => Math.round(v * 1000);
+  console.log(`${name}.glb  ${(glb.length / 1024).toFixed(1)} KB  ${mm(max.x - min.x)}×${mm(max.z - min.z)}×${mm(max.y - min.y)} mm`);
 }
 
 // 1. Maceta geométrica: torno con pocos segmentos para un look facetado.
@@ -148,4 +150,164 @@ writeGlb("nudo-toroidal", new THREE.TorusKnotGeometry(0.4, 0.13, 180, 24, 2, 3),
   s.closePath();
   const geo = new THREE.ExtrudeGeometry(s, { depth: 0.7, bevelEnabled: true, bevelSize: 0.01, bevelThickness: 0.01, bevelSegments: 1 });
   writeGlb("soporte-celular", geo, "#f97316", { roughness: 0.5, flat: true });
+}
+
+/** Une varias geometrías (todas pasan a no indexadas para que sean compatibles). */
+const merge = (...geos) => mergeGeometries(geos.map((g) => (g.index ? g.toNonIndexed() : g)));
+
+/** Gira cada vértice alrededor del eje Y en proporción a su altura. */
+function twist(geo, turnsPerUnit) {
+  const p = geo.attributes.position;
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+    const a = y * turnsPerUnit;
+    p.setXYZ(i, x * Math.cos(a) - z * Math.sin(a), y, x * Math.sin(a) + z * Math.cos(a));
+  }
+  return geo;
+}
+
+/** Perfil de pared hueca para LatheGeometry: sube por fuera y baja por dentro. */
+function shell(radius, height, { wall = 0.03, floor = 0.04, steps = 24 } = {}) {
+  const pts = [new THREE.Vector2(0, 0)];
+  for (let i = 0; i <= steps; i++) pts.push(new THREE.Vector2(radius(i / steps), (i / steps) * height));
+  for (let i = steps; i >= 0; i--) pts.push(new THREE.Vector2(radius(i / steps) - wall, Math.max((i / steps) * height, floor)));
+  pts.push(new THREE.Vector2(0, floor));
+  return pts;
+}
+
+const hexagon = (r, path = new THREE.Shape(), cx = 0, cy = 0, rot = 0) => {
+  for (let i = 0; i <= 6; i++) {
+    const a = rot + (i / 6) * Math.PI * 2;
+    const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
+    if (i === 0) path.moveTo(x, y);
+    else path.lineTo(x, y);
+  }
+  return path;
+};
+
+// 6. Llavero panal: hexágono con celdas caladas y argolla.
+{
+  const shape = hexagon(0.27);
+  for (const [cx, cy] of [[0, 0], [0.1, 0.058], [-0.1, 0.058], [0.1, -0.058], [-0.1, -0.058], [0, 0.116], [0, -0.116]]) {
+    if (Math.hypot(cx, cy) > 0.12 && cy > 0.1) continue; // deja lugar para la argolla
+    shape.holes.push(hexagon(0.045, new THREE.Path(), cx, cy, Math.PI / 6));
+  }
+  const ring = new THREE.Path();
+  ring.absarc(0.2, 0, 0.035, 0, Math.PI * 2, true);
+  shape.holes.push(ring);
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.03, bevelEnabled: true, bevelSize: 0.006, bevelThickness: 0.006, bevelSegments: 1 });
+  geo.rotateX(-Math.PI / 2);
+  writeGlb("llavero-panal", geo, "#eab308", { roughness: 0.45, flat: true });
+}
+
+// 7. Portalápices hexagonal con giro.
+{
+  const geo = new THREE.LatheGeometry(shell(() => 0.36, 0.72, { wall: 0.035, floor: 0.05, steps: 12 }), 6);
+  writeGlb("portalapices-twist", twist(geo, 0.9), "#3b82f6", { roughness: 0.4, flat: true });
+}
+
+// 8. Posavasos con ondas concéntricas.
+{
+  const pts = [new THREE.Vector2(0, 0)];
+  for (let i = 0; i <= 48; i++) {
+    const r = (i / 48) * 0.3;
+    pts.push(new THREE.Vector2(r, 0.03 + 0.008 * Math.cos(r * 70)));
+  }
+  pts.push(new THREE.Vector2(0.31, 0.06), new THREE.Vector2(0.33, 0.05), new THREE.Vector2(0.33, 0), new THREE.Vector2(0, 0));
+  pts.reverse();
+  writeGlb("posavasos-ondas", new THREE.LatheGeometry(pts, 72), "#14b8a6", { roughness: 0.5 });
+}
+
+// 9. Dado de 20 caras.
+writeGlb("dado-d20", new THREE.IcosahedronGeometry(0.13, 0), "#f43f5e", { roughness: 0.3, flat: true });
+
+// 10. Pantalla de lámpara facetada, abierta arriba y abajo.
+{
+  const outer = (t) => 0.3 + 0.22 * Math.sin(t * Math.PI * 0.9);
+  const pts = [];
+  for (let i = 0; i <= 10; i++) pts.push(new THREE.Vector2(outer(i / 10), (i / 10) * 1.1));
+  for (let i = 10; i >= 0; i--) pts.push(new THREE.Vector2(outer(i / 10) - 0.02, (i / 10) * 1.1));
+  pts.push(pts[0].clone());
+  const geo = new THREE.LatheGeometry(pts, 10);
+  writeGlb("lampara-facetada", twist(geo, 0.6), "#f8fafc", { roughness: 0.6, flat: true });
+}
+
+// 11. Gancho de pared en "J" con placa para tornillos.
+{
+  const s = new THREE.Shape();
+  s.moveTo(0, 1.1);
+  s.lineTo(0, 0.2);
+  s.absarc(0.2, 0.2, 0.2, Math.PI, Math.PI * 2, false);
+  s.lineTo(0.4, 0.42);
+  s.lineTo(0.32, 0.42);
+  s.lineTo(0.32, 0.2);
+  s.absarc(0.2, 0.2, 0.12, 0, -Math.PI, true);
+  s.lineTo(0.08, 1.1);
+  s.closePath();
+  const hook = new THREE.ExtrudeGeometry(s, { depth: 0.18, curveSegments: 24, bevelEnabled: true, bevelSize: 0.012, bevelThickness: 0.012, bevelSegments: 2 });
+  writeGlb("gancho-pared", hook, "#64748b", { roughness: 0.45, metalness: 0.15, flat: true });
+}
+
+// 12. Soporte para auriculares: base, columna y apoyo curvo.
+{
+  const s = new THREE.Shape();
+  s.moveTo(-0.4, 0);
+  s.lineTo(0.4, 0);
+  s.lineTo(0.4, 0.06);
+  s.quadraticCurveTo(0.06, 0.08, 0.05, 0.25);
+  s.lineTo(0.05, 1.2);
+  s.quadraticCurveTo(0.3, 1.2, 0.36, 1.32);
+  s.lineTo(0.34, 1.37);
+  s.quadraticCurveTo(0.2, 1.3, 0, 1.3);
+  s.quadraticCurveTo(-0.2, 1.3, -0.34, 1.37);
+  s.lineTo(-0.36, 1.32);
+  s.quadraticCurveTo(-0.3, 1.2, -0.05, 1.2);
+  s.lineTo(-0.05, 0.25);
+  s.quadraticCurveTo(-0.06, 0.08, -0.4, 0.06);
+  s.closePath();
+  const geo = new THREE.ExtrudeGeometry(s, { depth: 0.35, curveSegments: 16, bevelEnabled: true, bevelSize: 0.012, bevelThickness: 0.012, bevelSegments: 2 });
+  writeGlb("soporte-auriculares", geo, "#111827", { roughness: 0.35 });
+}
+
+// 13. Cuenco facetado con giro.
+{
+  const radius = (t) => 0.18 + 0.4 * Math.sin((t * Math.PI) / 2);
+  const geo = new THREE.LatheGeometry(shell(radius, 0.45, { wall: 0.03, floor: 0.04, steps: 10 }), 9);
+  writeGlb("cuenco-twist", twist(geo, 1.4), "#a855f7", { roughness: 0.35, flat: true });
+}
+
+// 14. Torre de ajedrez con almenas.
+{
+  const profile = [
+    [0, 0], [0.3, 0], [0.3, 0.06], [0.26, 0.1], [0.26, 0.14], [0.2, 0.2], [0.16, 0.7], [0.22, 0.76], [0.22, 0.95], [0.15, 0.95], [0.15, 0.88], [0, 0.88],
+  ].map(([x, y]) => new THREE.Vector2(x, y));
+  const parts = [new THREE.LatheGeometry(profile, 48)];
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2;
+    const merlon = new THREE.BoxGeometry(0.075, 0.09, 0.07);
+    merlon.rotateY(-a);
+    merlon.translate(Math.cos(a) * 0.185, 0.995, Math.sin(a) * 0.185);
+    parts.push(merlon);
+  }
+  writeGlb("torre-ajedrez", merge(...parts), "#f97316", { roughness: 0.4 });
+}
+
+// 15. Organizador de cables: peine con tres ranuras.
+{
+  const W = 0.75, H = 0.2, r = 0.045, g = 0.022;
+  const s = new THREE.Shape();
+  s.moveTo(0, 0);
+  s.lineTo(W, 0);
+  s.lineTo(W, H);
+  for (const cx of [0.6, 0.375, 0.15]) {
+    const cy = H - 0.075, top = Math.asin(g / r);
+    s.lineTo(cx + g, H);
+    s.lineTo(cx + g, cy + Math.cos(top) * r);
+    s.absarc(cx, cy, r, Math.PI / 2 - top, -(3 * Math.PI) / 2 + top, true);
+    s.lineTo(cx - g, H);
+  }
+  s.lineTo(0, H);
+  s.closePath();
+  const geo = new THREE.ExtrudeGeometry(s, { depth: 0.12, curveSegments: 16, bevelEnabled: true, bevelSize: 0.008, bevelThickness: 0.008, bevelSegments: 1 });
+  writeGlb("organizador-cables", geo, "#84cc16", { roughness: 0.5, flat: true });
 }

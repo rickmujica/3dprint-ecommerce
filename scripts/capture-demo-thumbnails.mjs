@@ -1,14 +1,17 @@
 // Genera las miniaturas del catálogo demo renderizando cada GLB con <model-viewer>.
 // Requiere el sitio corriendo (npm run dev o npm run preview) y Playwright instalado.
-// Uso: BASE_URL=http://localhost:3000 node scripts/capture-demo-thumbnails.mjs
-import { writeFileSync } from "node:fs";
+// Uso: BASE_URL=http://localhost:3000 node scripts/capture-demo-thumbnails.mjs [slug ...]
+import { readdirSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 
 // Usa el Playwright del proyecto o el instalado globalmente.
 const { chromium } = createRequire(import.meta.url)("playwright");
 
 const BASE = process.env.BASE_URL ?? "http://localhost:3000";
-const slugs = ["jarron-espiral", "maceta-geometrica", "nudo-toroidal", "engranaje", "soporte-celular"];
+// Sin argumentos, captura todos los GLB de public/demo.
+const slugs = process.argv.length > 2
+  ? process.argv.slice(2)
+  : readdirSync(new URL("../public/demo/", import.meta.url)).filter((f) => f.endsWith(".glb")).map((f) => f.slice(0, -4));
 
 const browser = await chromium.launch({ args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] });
 const page = await browser.newPage({ viewport: { width: 1200, height: 1000 }, deviceScaleFactor: 1 });
