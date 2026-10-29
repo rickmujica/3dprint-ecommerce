@@ -1,16 +1,22 @@
 import type { MetadataRoute } from "next";
 
-import { getPublishedModels } from "@/lib/catalog";
+import { getCategories, getPublishedModels } from "@/lib/catalog";
 import { site } from "@/lib/site";
+import { slugify } from "@/lib/utils";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const models = await getPublishedModels();
+  const [models, categories] = await Promise.all([getPublishedModels(), getCategories()]);
   const url = (path: string) => new URL(path, site.url).toString();
 
   return [
     { url: url("/"), changeFrequency: "weekly", priority: 1 },
     { url: url("/modelos"), changeFrequency: "daily", priority: 0.9 },
     { url: url("/pedido-personalizado"), changeFrequency: "monthly", priority: 0.7 },
+    ...categories.map((c) => ({
+      url: url(`/categorias/${slugify(c)}`),
+      changeFrequency: "weekly" as const,
+      priority: 0.8,
+    })),
     ...models.map((m) => ({
       url: url(`/modelos/${m.slug}`),
       lastModified: m.created_at,

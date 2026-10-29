@@ -10,7 +10,7 @@ import { getModelBySlug, getPublishedModels } from "@/lib/catalog";
 import { licenses } from "@/lib/options";
 import { site } from "@/lib/site";
 import type { Model } from "@/lib/types";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, slugify } from "@/lib/utils";
 
 // Prerenderiza las fichas conocidas en el build; las nuevas se generan on-demand y quedan cacheadas.
 export async function generateStaticParams() {
@@ -63,7 +63,7 @@ async function ModelDetails({ params }: Pick<PageProps<"/modelos/[slug]">, "para
       <nav aria-label="Migas" className="mb-6 flex items-center gap-1 text-sm text-muted-foreground">
         <Link href="/modelos" className="hover:text-foreground">Catálogo</Link>
         <ChevronRight className="size-4" />
-        <Link href={`/modelos?categoria=${encodeURIComponent(model.category)}`} className="hover:text-foreground">
+        <Link href={`/categorias/${slugify(model.category)}`} className="hover:text-foreground">
           {model.category}
         </Link>
       </nav>
