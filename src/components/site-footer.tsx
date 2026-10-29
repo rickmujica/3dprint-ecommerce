@@ -16,6 +16,7 @@ export function SiteFooter() {
           <ul className="space-y-1 text-muted-foreground">
             <li><Link className="hover:text-foreground" href="/modelos">Catálogo</Link></li>
             <li><Link className="hover:text-foreground" href="/pedido-personalizado">Pedido personalizado</Link></li>
+            <li><Link className="hover:text-foreground" href="/admin" prefetch={false} rel="nofollow">Acceso admin</Link></li>
           </ul>
         </div>
         <div className="space-y-2 text-sm">

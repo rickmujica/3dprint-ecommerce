@@ -7,11 +7,11 @@ Next.js 16 corriendo en **Cloudflare Workers** (OpenNext), con **Supabase** (bas
 
 ## Qué incluye
 
-- **Catálogo** con filtros por categoría y fichas por modelo.
+- **Catálogo** y páginas por categoría (`/categorias/<nombre>`), todas estáticas, y fichas por modelo.
 - **Visor 3D** (`<model-viewer>`): rotar, zoom, realidad aumentada en el celular. Al elegir un color, el modelo se tiñe en vivo.
 - **Pedido desde la ficha**: material, color, tamaño, cantidad y contacto. Genera un código (`P-XXXXXX`) y ofrece seguir por WhatsApp.
 - **Pedido personalizado**: descripción + foto de referencia (se guarda privada en R2).
-- **Panel admin** (`/admin`): subir modelos en STL, OBJ, 3MF o GLB. El navegador lo convierte a un GLB liviano, genera la miniatura y mide el tamaño en mm. El original queda privado. También lista los pedidos y permite cambiar estado y cotización.
+- **Panel admin** (`/admin`, link "Acceso admin" en el pie): subir modelos en STL, OBJ, 3MF o GLB. El navegador lo convierte a un GLB liviano, genera la miniatura y mide el tamaño en mm. El original queda privado. También lista los pedidos y permite cambiar estado y cotización.
 - **Licencias**: cada modelo guarda licencia, autor y enlace al original. Solo se aceptan licencias que permiten vender impresiones (CC0, CC BY, CC BY-SA, comercial, propio o con permiso). Las CC "NC" quedan afuera a propósito.
 - **SEO**: páginas prerenderizadas, metadata y Open Graph por modelo, JSON-LD `Product`, `sitemap.xml` y `robots.txt`.
 - **Tema** blanco/negro con acentos de color, interruptor claro/oscuro y detalles "3D" (sombras extruidas, tarjetas que se inclinan, grilla de cama de impresión). Componentes compatibles con shadcn/ui.
@@ -57,7 +57,11 @@ npx wrangler r2 bucket create 3dprint-ecommerce-opennext-cache
 npm run deploy
 ```
 
-Las variables `NEXT_PUBLIC_*` se leen **al compilar**: tienen que estar en `.env.local` (deploy desde tu máquina) o en la configuración de build si conectás el repo con **Workers Builds** (build: `npx opennextjs-cloudflare build`, deploy: `npx opennextjs-cloudflare deploy`).
+Las variables `NEXT_PUBLIC_*` se leen **al compilar**: tienen que estar en `.env.local` (deploy desde tu máquina) o en **Settings → Build → Variables and secrets** si conectás el repo con **Workers Builds**. Comandos en Workers Builds:
+
+- Build: `npx opennextjs-cloudflare build`
+- Deploy (producción): `npx opennextjs-cloudflare deploy`
+- Deploy de otras ramas (preview): `npx opennextjs-cloudflare upload`
 
 > R2 puede pedir una tarjeta para activarse aunque no cobre dentro del plan gratis (10 GB).
 
