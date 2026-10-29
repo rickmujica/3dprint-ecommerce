@@ -37,7 +37,7 @@ npm run preview              # http://localhost:8787
 ### 1. Supabase
 
 1. Creá un proyecto en [supabase.com](https://supabase.com) (plan gratis).
-2. En **SQL Editor**, corré `supabase/migrations/20261028000000_init.sql`. Opcional: `supabase/seed.sql` carga los modelos de ejemplo.
+2. En **SQL Editor**, corré los archivos de `supabase/migrations/` en orden. Opcional: `supabase/seed.sql` carga los modelos de ejemplo.
 3. En **Authentication → Users**, creá tu usuario (email y contraseña) y hacelo admin:
    ```sql
    insert into public.admins (user_id) select id from auth.users where email = 'vos@ejemplo.com';
