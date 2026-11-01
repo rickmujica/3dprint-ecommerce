@@ -15,6 +15,9 @@ const eslintConfig = defineConfig([
     ".open-next/**",
     ".wrangler/**",
     "cloudflare-env.d.ts",
+    // Skills de Claude Code (img2threejs es un submódulo) y modelos fuente de export-printable.
+    ".claude/**",
+    "models/**",
   ]),
 ]);
 
