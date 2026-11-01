@@ -45,3 +45,6 @@ next-env.d.ts
 .wrangler
 .dev.vars
 !.env.example
+
+# salida de scripts/export-printable.mjs
+/out/
