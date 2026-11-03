@@ -1,3 +1,6 @@
 [submodule ".claude/skills/img2threejs"]
 	path = .claude/skills/img2threejs
 	url = https://github.com/img2threejs/img2threejs
+[submodule ".claude/vendor/open-3d-skills"]
+	path = .claude/vendor/open-3d-skills
+	url = https://github.com/Moh4696/open-3d-skills
