@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
   images: { unoptimized: true },
   experimental: {
     serverActions: { bodySizeLimit: "8mb" },
+    // Volver a una vista del admin visitada hace menos de 30 s es instantáneo (no se pide de nuevo al servidor).
+    // Guardar cualquier formulario (Server Action con refresh/updateTag) vacía esta caché del navegador.
+    staleTimes: { dynamic: 30 },
   },
   turbopack: {
     rules: {
