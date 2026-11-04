@@ -6,8 +6,8 @@ import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { capacityInfo, deliveryFor, getCapacity } from "@/lib/capacity";
 import { licenses, orderStatuses, sizes, waitlistStatuses } from "@/lib/options";
-import { normalizePalette, type Filament } from "@/lib/palette";
-import { normalizeMaterialTypes } from "@/lib/material-types";
+import { defaultFilaments, normalizePalette, type Filament } from "@/lib/palette";
+import { defaultMaterialTypes, normalizeMaterialTypes } from "@/lib/material-types";
 import { getMaterialTypes, getPalette } from "@/lib/palette-server";
 import { orderCode } from "@/lib/order-code";
 import { isSafeKey, publicFileUrl } from "@/lib/r2";
@@ -207,6 +207,53 @@ export async function updateMaterialTypes(
   if (!types || types.length !== withIds.length)
     return { error: "Cada tipo necesita un nombre y un multiplicador de precio mayor a 0 (ej. 1 o 1,3)." };
   if (!types.some((t) => t.available)) return { error: "Tiene que haber al menos un tipo disponible." };
+
+  // Los colores de cada tipo se editan en su propia tabla: se conservan los guardados (los tipos nuevos tienen todos).
+  const { data: current } = await supabase.from("shop_settings").select("material_types").eq("id", true).maybeSingle();
+  const saved = normalizeMaterialTypes(current?.material_types) ?? [];
+  for (const t of types) t.colors = saved.find((s) => s.id === t.id)?.colors ?? null;
+
+  const { error } = await supabase.from("shop_settings").update({ material_types: types }).eq("id", true);
+  if (error) return { error: error.message };
+  updateTag("palette");
+  refresh();
+  return { ok: true };
+}
+
+/** Qué colores hay de cada tipo de filamento (tabla tipos × colores de /admin/filamentos). */
+export async function updateMaterialColors(
+  _prev: AdminFormState,
+  form: FormData,
+): Promise<AdminFormState & { ok?: boolean }> {
+  const { supabase } = await requireAdmin();
+  let raw: unknown;
+  try {
+    raw = JSON.parse(str(form, "material_colors", 20000) || "{}");
+  } catch {
+    return { error: "Tabla de colores inválida." };
+  }
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return { error: "Tabla de colores inválida." };
+  const byType = raw as Record<string, unknown>;
+
+  const { data, error: readError } = await supabase
+    .from("shop_settings")
+    .select("material_types, filaments")
+    .eq("id", true)
+    .maybeSingle();
+  if (readError) return { error: readError.message };
+  const types = normalizeMaterialTypes(data?.material_types) ?? defaultMaterialTypes.map((t) => ({ ...t }));
+  const palette = normalizePalette(data?.filaments) ?? defaultFilaments;
+  const paletteIds = palette.map((c) => c.id);
+
+  for (const t of types) {
+    const picked = byType[t.id];
+    if (!Array.isArray(picked)) continue;
+    const ids = paletteIds.filter((id) => picked.includes(id));
+    // Todos marcados = null: los colores que se agreguen a la paleta después también van a estar en este tipo.
+    t.colors = ids.length === paletteIds.length ? null : ids;
+  }
+  const empty = types.find((t) => t.available && t.colors?.length === 0);
+  if (empty) return { error: `Marcá al menos un color para ${empty.label}, o desmarcá "Disponible" en ese tipo.` };
 
   const { error } = await supabase.from("shop_settings").update({ material_types: types }).eq("id", true);
   if (error) return { error: error.message };

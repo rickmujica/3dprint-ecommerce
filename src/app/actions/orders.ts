@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 
 import { capacityInfo, deliveryFor, estimatePrice, getCapacity, type CapacityInfo } from "@/lib/capacity";
 import { getModelBySlug } from "@/lib/catalog";
-import { materialsFor, type MaterialType } from "@/lib/material-types";
+import { orderableMaterials, paletteFor, type MaterialType } from "@/lib/material-types";
 import { colorModes, maxColors, sizes } from "@/lib/options";
 import { availableFilaments, type Filament } from "@/lib/palette";
 import { getMaterialTypes, getPalette } from "@/lib/palette-server";
@@ -73,7 +73,8 @@ function readFreeColors(form: FormData, allowMulti: boolean, palette: Filament[]
   const choice = { colorMode: mode as ColorMode, color: fields.color, zones: null, fields };
 
   if (!colorModes.some((m) => m.id === mode)) return { ...choice, error: "Elegí un color o multicolor." };
-  if (picked.some((id) => !isColor(id))) return { ...choice, error: "Elegí colores de la lista." };
+  if (picked.length === 0) return { ...choice, error: mode === "multi" ? "Elegí los colores." : "Elegí un color." };
+  if (picked.some((id) => !isColor(id))) return { ...choice, error: "Elegí colores de la lista (los que hay en ese material)." };
   if (mode === "mono" && picked.length > 1) return { ...choice, error: "Elegí un solo color." };
   if (mode === "multi" && picked.length < 2) return { ...choice, error: "Para multicolor elegí al menos 2 colores." };
   if (picked.length > maxColors) return { ...choice, error: `Podemos combinar hasta ${maxColors} colores.` };
@@ -91,16 +92,22 @@ function readZoneColors(form: FormData, model: Model, palette: Filament[]): Colo
   if (model.colors_locked && zoneMode !== "original") return fail("Este modelo se imprime solo con sus colores originales.");
 
   if (zoneMode === "mono") {
-    if (!isColor(fields.color)) return fail("Elegí el color para toda la pieza.");
+    if (!isColor(fields.color)) return fail("Elegí el color para toda la pieza (de los que hay en ese material).");
     return { colorMode: "mono", color: fields.color, zones: null, fields };
   }
 
   let zones: ColorZone[];
   if (zoneMode === "original") {
     zones = model.color_zones.map(({ name, color }) => ({ name, color }));
+    if (zones.some((z) => !isColor(z.color)))
+      return fail(
+        model.colors_locked
+          ? "En ese material no tenemos todos los colores de este modelo: elegí otro material."
+          : "En ese material no tenemos todos los colores originales: elegí «Personalizar» u otro material.",
+      );
   } else if (zoneMode === "custom") {
     zones = model.color_zones.map((z, i) => ({ name: z.name, color: fields[`zone_${i}`] }));
-    if (zones.some((z) => !isColor(z.color))) return fail("Elegí un color para cada zona.");
+    if (zones.some((z) => !isColor(z.color))) return fail("Elegí un color para cada zona (de los que hay en ese material).");
   } else {
     return fail("Elegí cómo querés los colores.");
   }
@@ -179,11 +186,13 @@ export async function createCatalogOrder(_prev: OrderFormState, form: FormData):
     getPalette(),
     getMaterialTypes(),
   ]);
-  const materialOptions = materialsFor(materialTypes, model?.allowed_materials);
+  const materialOptions = orderableMaterials(materialTypes, palette, model);
   const common = readCommon(form, materialOptions);
+  // Solo valen los colores que hay en el tipo de filamento elegido.
+  const materialPalette = paletteFor(palette, materialOptions.find((m) => m.id === common.fields.material));
   const colorChoice = model?.color_zones.length
-    ? readZoneColors(form, model, palette)
-    : readFreeColors(form, false, palette);
+    ? readZoneColors(form, model, materialPalette)
+    : readFreeColors(form, false, materialPalette);
   const fields: Record<string, string> = { ...common.fields, ...colorChoice.fields };
   if (!model) return { error: "Ese modelo ya no está disponible.", fields };
   const error = common.error ?? colorChoice.error;
@@ -228,8 +237,10 @@ export async function createCustomOrder(_prev: OrderFormState, form: FormData): 
   if (str(form, "website")) redirect("/pedido/gracias");
 
   const [palette, materialTypes] = await Promise.all([getPalette(), getMaterialTypes()]);
-  const common = readCommon(form, materialsFor(materialTypes, null));
-  const colorChoice = readFreeColors(form, true, palette);
+  const materialOptions = orderableMaterials(materialTypes, palette, null);
+  const common = readCommon(form, materialOptions);
+  const materialPalette = paletteFor(palette, materialOptions.find((m) => m.id === common.fields.material));
+  const colorChoice = readFreeColors(form, true, materialPalette);
   const description = str(form, "description", 4000);
   const fields: Record<string, string> = { ...common.fields, ...colorChoice.fields, description };
   const error = common.error ?? colorChoice.error;

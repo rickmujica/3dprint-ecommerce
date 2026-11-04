@@ -10,7 +10,7 @@ import { ColorPicker, ContactFields, FormError, MaterialPicker, SizeAndQuantity 
 import { Button } from "@/components/ui/button";
 import { ZoneColorPicker, type ZonePreview } from "@/components/zone-color-picker";
 import { estimatePrice } from "@/lib/delivery";
-import { materialsFor, type MaterialType } from "@/lib/material-types";
+import { orderableMaterials, paletteFor, type MaterialType } from "@/lib/material-types";
 import type { Filament } from "@/lib/palette";
 import type { Model } from "@/lib/types";
 
@@ -30,9 +30,12 @@ export function ProductConfigurator({
   const [preview, setPreview] = useState<ZonePreview>({ mode: "mono", materialColors: null, tint: null });
   const [size, setSize] = useState(state.fields?.size ?? "100");
   const [quantity, setQuantity] = useState(Number(state.fields?.quantity ?? 1));
-  const materialOptions = materialsFor(materialTypes, model.allowed_materials);
+  const materialOptions = orderableMaterials(materialTypes, palette, model);
   const [material, setMaterial] = useState(state.fields?.material ?? materialOptions[0]?.id);
-  const materialFactor = materialOptions.find((m) => m.id === material)?.price_factor ?? 1;
+  const selectedMaterial = materialOptions.find((m) => m.id === material) ?? materialOptions[0];
+  const materialFactor = selectedMaterial?.price_factor ?? 1;
+  // Los colores que se ofrecen dependen del tipo de filamento elegido.
+  const materialPalette = paletteFor(palette, selectedMaterial);
   const capacity = useCapacity();
   const waitlist = isWaitlist(capacity, state.full);
   const hasZones = model.color_zones.length > 0;
@@ -75,7 +78,8 @@ export function ProductConfigurator({
           <MaterialPicker options={materialOptions} defaultValue={state.fields?.material} />
           {hasZones ? (
             <ZoneColorPicker
-              palette={palette}
+              palette={materialPalette}
+              materialLabel={selectedMaterial?.label}
               zones={model.color_zones}
               locked={model.colors_locked}
               fields={state.fields}
@@ -83,7 +87,8 @@ export function ProductConfigurator({
             />
           ) : (
             <ColorPicker
-              palette={palette}
+              palette={materialPalette}
+              materialLabel={selectedMaterial?.label}
               allowMulti={false}
               defaultColors={state.fields?.color ? state.fields.color.split(",") : []}
               onTint={onTint}

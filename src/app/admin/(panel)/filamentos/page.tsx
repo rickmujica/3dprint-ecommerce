@@ -1,4 +1,5 @@
 import { FilamentsForm } from "@/components/admin/filaments-form";
+import { MaterialColorsForm } from "@/components/admin/material-colors-form";
 import { MaterialTypesForm } from "@/components/admin/material-types-form";
 import { requireAdmin } from "@/lib/auth";
 import { defaultMaterialTypes, normalizeMaterialTypes } from "@/lib/material-types";
@@ -10,6 +11,11 @@ export default async function FilamentsPage() {
     supabase.from("shop_settings").select("filaments").eq("id", true).maybeSingle(),
     supabase.from("shop_settings").select("material_types").eq("id", true).maybeSingle(),
   ]);
+
+  const typeList = normalizeMaterialTypes(types.data?.material_types) ?? defaultMaterialTypes;
+  const colorList = normalizePalette(palette.data?.filaments) ?? defaultFilaments;
+  // La tabla se rearma cuando cambian los tipos o la paleta (al guardar cualquiera de los formularios).
+  const matrixKey = JSON.stringify([typeList.map((t) => [t.id, t.colors]), colorList.map((c) => c.id)]);
 
   return (
     <div className="max-w-4xl space-y-10">
@@ -26,7 +32,7 @@ export default async function FilamentsPage() {
         {types.error ? (
           <MigrationHint file="20261105030000_material_types.sql" />
         ) : (
-          <MaterialTypesForm types={normalizeMaterialTypes(types.data?.material_types) ?? defaultMaterialTypes} />
+          <MaterialTypesForm types={typeList} />
         )}
       </section>
 
@@ -41,9 +47,22 @@ export default async function FilamentsPage() {
         {palette.error ? (
           <MigrationHint file="20261105010000_filaments.sql" />
         ) : (
-          <FilamentsForm palette={normalizePalette(palette.data?.filaments) ?? defaultFilaments} />
+          <FilamentsForm palette={colorList} />
         )}
       </section>
+
+      {!types.error && !palette.error && (
+        <section className="space-y-4">
+          <div className="space-y-1">
+            <h2 className="text-xl font-semibold">Colores de cada tipo</h2>
+            <p className="text-sm text-muted-foreground">
+              Marcá qué colores tenés de cada tipo de filamento. Cuando el cliente cambia de material, solo puede elegir
+              los colores de ese material.
+            </p>
+          </div>
+          <MaterialColorsForm key={matrixKey} types={typeList} palette={colorList} />
+        </section>
+      )}
     </div>
   );
 }

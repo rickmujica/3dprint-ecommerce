@@ -79,7 +79,7 @@ export function MaterialTypesForm({ types }: { types: MaterialType[] }) {
         onClick={() =>
           setRows((prev) => [
             ...prev,
-            { id: "", key: crypto.randomUUID(), label: "", hint: "", price_factor: "1", available: true },
+            { id: "", key: crypto.randomUUID(), label: "", hint: "", price_factor: "1", available: true, colors: null },
           ])
         }
       >
