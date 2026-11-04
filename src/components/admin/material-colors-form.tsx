@@ -42,6 +42,9 @@ export function MaterialColorsForm({ types, palette }: { types: MaterialType[]; 
                   <th key={t.id} scope="col" className={cn("p-2 text-center font-medium", !t.available && "text-muted-foreground")}>
                     <span className="block whitespace-nowrap">{t.label}</span>
                     {!t.available && <span className="block text-xs font-normal">sin stock</span>}
+                    {t.available && (checked[t.id]?.length ?? 0) === 0 && (
+                      <span className="block text-xs font-normal text-destructive">no se ofrece</span>
+                    )}
                     <button
                       type="button"
                       onClick={() => setColumn(t.id, !full)}
@@ -84,8 +87,8 @@ export function MaterialColorsForm({ types, palette }: { types: MaterialType[]; 
         </table>
       </div>
       <p className="text-xs text-muted-foreground">
-        El cliente solo ve los colores marcados para el tipo que elige. Si un tipo tiene todos marcados, los colores nuevos
-        que agregues a la paleta también quedan en ese tipo.
+        El cliente solo ve los colores marcados para el tipo que elige, y un tipo sin ningún color marcado no se ofrece.
+        Si un tipo tiene todos marcados, los colores nuevos que agregues a la paleta también quedan en ese tipo.
       </p>
       <FormError message={state.error} />
       {state.ok && <p role="status" className="text-sm font-medium text-primary">Colores por tipo guardados.</p>}

@@ -8,6 +8,7 @@ import { ModelViewer } from "@/components/model-viewer";
 import { CapacityNotice, isWaitlist, useCapacity } from "@/components/order-capacity";
 import { ColorPicker, ContactFields, FormError, MaterialPicker, SizeAndQuantity } from "@/components/order-fields";
 import { Button } from "@/components/ui/button";
+import { useShopOptions } from "@/components/use-shop-options";
 import { ZoneColorPicker, type ZonePreview } from "@/components/zone-color-picker";
 import { estimatePrice } from "@/lib/delivery";
 import { orderableMaterials, paletteFor, type MaterialType } from "@/lib/material-types";
@@ -17,11 +18,12 @@ import type { Model } from "@/lib/types";
 /** Visor + formulario de pedido. Elegir colores tiñe el modelo en vivo y recalcula precio y fecha. */
 export function ProductConfigurator({
   model,
-  palette,
-  materialTypes,
+  palette: initialPalette,
+  materialTypes: initialMaterialTypes,
   children,
 }: {
   model: Model;
+  /** Colores y tipos con los que se generó la página; al abrirla se reemplazan por los actuales. */
   palette: Filament[];
   materialTypes: MaterialType[];
   children: React.ReactNode;
@@ -30,6 +32,7 @@ export function ProductConfigurator({
   const [preview, setPreview] = useState<ZonePreview>({ mode: "mono", materialColors: null, tint: null });
   const [size, setSize] = useState(state.fields?.size ?? "100");
   const [quantity, setQuantity] = useState(Number(state.fields?.quantity ?? 1));
+  const { palette, materialTypes } = useShopOptions({ palette: initialPalette, materialTypes: initialMaterialTypes });
   const materialOptions = orderableMaterials(materialTypes, palette, model);
   const [material, setMaterial] = useState(state.fields?.material ?? materialOptions[0]?.id);
   const selectedMaterial = materialOptions.find((m) => m.id === material) ?? materialOptions[0];
@@ -69,13 +72,12 @@ export function ProductConfigurator({
             const data = new FormData(e.currentTarget);
             setSize(String(data.get("size") ?? "100"));
             setQuantity(Number(data.get("quantity")) || 1);
-            setMaterial(String(data.get("material") ?? ""));
           }}
           className="space-y-6 rounded-2xl border-2 border-foreground/10 p-5 sm:p-6"
         >
           <h2 className="font-display text-xl font-semibold">Configurá tu impresión</h2>
           <input type="hidden" name="model_slug" value={model.slug} />
-          <MaterialPicker options={materialOptions} defaultValue={state.fields?.material} />
+          <MaterialPicker options={materialOptions} value={selectedMaterial?.id} onChange={setMaterial} />
           {hasZones ? (
             <ZoneColorPicker
               palette={materialPalette}

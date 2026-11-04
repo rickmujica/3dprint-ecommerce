@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Lock } from "lucide-react";
+import { Lock, TriangleAlert } from "lucide-react";
 
+import { missingColorsText } from "@/lib/material-types";
 import { maxColors } from "@/lib/options";
 import { availableFilaments, hexOf, labelOf, type Filament } from "@/lib/palette";
 import type { ColorMode, ColorZone } from "@/lib/types";
@@ -53,7 +54,7 @@ export function ZoneColorPicker({
   const colors = availableFilaments(palette);
   const colorHex = (id: string) => hexOf(palette, id);
   const inMaterial = (id: string) => colors.some((c) => c.id === id);
-  const notInMaterial = `no hay en ${materialLabel ?? "este material"}`;
+  const notInMaterial = `no lo tenemos en ${materialLabel ?? "este material"}`;
   const missingOriginal = zones.filter((z) => !inMaterial(z.color));
   // La paleta llega como lista nueva en cada render (filtrada por material): el efecto depende de su contenido.
   const paletteKey = palette.map((c) => `${c.id}:${c.hex}:${c.available}`).join();
@@ -125,9 +126,18 @@ export function ZoneColorPicker({
             ))}
           </ul>
           {missingOriginal.length > 0 && (
-            <p role="status" className="text-xs font-medium text-destructive">
-              {[...new Set(missingOriginal.map((z) => labelOf(palette, z.color)))].join(" y ")} {notInMaterial}:{" "}
-              {locked ? "elegí otro material." : "elegí otro material o tocá «Personalizar»."}
+            <p
+              role="status"
+              className="flex gap-2 rounded-lg border-2 border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+            >
+              <TriangleAlert className="mt-0.5 size-4 shrink-0" />
+              <span>
+                {missingColorsText(
+                  materialLabel,
+                  missingOriginal.map((z) => labelOf(palette, z.color)),
+                )}
+                . {locked ? "Elegí otro material." : "Elegí otro material, o tocá «Personalizar» para cambiar ese color."}
+              </span>
             </p>
           )}
         </div>

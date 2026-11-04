@@ -9,10 +9,13 @@ import { ColorPicker, ContactFields, FormError, MaterialPicker, SizeAndQuantity 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useShopOptions } from "@/components/use-shop-options";
 import { orderableMaterials, paletteFor, type MaterialType } from "@/lib/material-types";
 import type { Filament } from "@/lib/palette";
 
-export function CustomOrderForm({ palette, materialTypes }: { palette: Filament[]; materialTypes: MaterialType[] }) {
+export function CustomOrderForm(initial: { palette: Filament[]; materialTypes: MaterialType[] }) {
+  // La página es ISR: al abrirla se piden los colores y tipos actuales.
+  const { palette, materialTypes } = useShopOptions(initial);
   const [state, action, pending] = useActionState<OrderFormState, FormData>(createCustomOrder, {});
   const [preview, setPreview] = useState<string | null>(null);
   const [colorMode, setColorMode] = useState<"mono" | "multi">(state.fields?.color_mode === "multi" ? "multi" : "mono");
@@ -26,9 +29,6 @@ export function CustomOrderForm({ palette, materialTypes }: { palette: Filament[
   return (
     <form
       action={action}
-      onChange={(e) => {
-        if (e.target instanceof HTMLInputElement && e.target.name === "material") setMaterial(e.target.value);
-      }}
       className="space-y-6 rounded-2xl border-2 border-foreground bg-card p-5 shadow-extrude sm:p-8 dark:border-extrude/60"
     >
       <div className="space-y-2">
@@ -74,7 +74,7 @@ export function CustomOrderForm({ palette, materialTypes }: { palette: Filament[
         />
       </div>
 
-      <MaterialPicker options={materialOptions} defaultValue={state.fields?.material} />
+      <MaterialPicker options={materialOptions} value={selectedMaterial?.id} onChange={setMaterial} />
       <ColorPicker
         palette={materialPalette}
         materialLabel={selectedMaterial?.label}
