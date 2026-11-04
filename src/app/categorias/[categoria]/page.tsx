@@ -12,10 +12,12 @@ async function findCategory(slug: string) {
   return { categories, category: categories.find((c) => slugify(c) === slug) ?? null };
 }
 
+// ISR: se regenera en segundo plano como mucho una vez por hora.
+export const revalidate = 3600;
+
 export async function generateStaticParams() {
   const categories = await getCategories();
-  // Con Cache Components hace falta al menos un parámetro.
-  return categories.length ? categories.map((c) => ({ categoria: slugify(c) })) : [{ categoria: "_" }];
+  return categories.map((c) => ({ categoria: slugify(c) }));
 }
 
 export async function generateMetadata({ params }: PageProps<"/categorias/[categoria]">): Promise<Metadata> {

@@ -4,6 +4,9 @@ import { CategoryNav } from "@/components/category-nav";
 import { ModelGrid } from "@/components/model-card";
 import { getCategories, getPublishedModels } from "@/lib/catalog";
 
+// ISR: se regenera en segundo plano como mucho una vez por hora.
+export const revalidate = 3600;
+
 export const metadata: Metadata = {
   title: "Catálogo de modelos 3D",
   description: "Modelos 3D listos para imprimir: decoración, hogar, repuestos y accesorios. Miralos en 3D y pedí tu impresión.",

@@ -13,10 +13,12 @@ import type { Model } from "@/lib/types";
 import { formatPrice, slugify } from "@/lib/utils";
 
 // Prerenderiza las fichas conocidas en el build; las nuevas se generan on-demand y quedan cacheadas.
+// ISR: se regenera en segundo plano como mucho una vez por hora.
+export const revalidate = 3600;
+
 export async function generateStaticParams() {
   const models = await getPublishedModels();
-  // Con Cache Components hace falta al menos un parámetro.
-  return models.length ? models.map((m) => ({ slug: m.slug })) : [{ slug: "_" }];
+  return models.map((m) => ({ slug: m.slug }));
 }
 
 export async function generateMetadata({ params }: PageProps<"/modelos/[slug]">): Promise<Metadata> {

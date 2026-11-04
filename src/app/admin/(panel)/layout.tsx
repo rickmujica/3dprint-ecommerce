@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { requireAdmin } from "@/lib/auth";
 
 // El panel depende de la sesión: no tiene sentido prerenderizarlo.
-export const instant = false;
+export const dynamic = "force-dynamic";
 
 export default function PanelLayout({ children }: LayoutProps<"/admin">) {
   return (

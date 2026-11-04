@@ -1,4 +1,4 @@
-import { cacheLife, cacheTag } from "next/cache";
+import { unstable_cache } from "next/cache";
 import { demoModels } from "./demo-data";
 import { hasSupabase } from "./supabase/env";
 import { createPublicClient } from "./supabase/public";
@@ -8,11 +8,21 @@ import type { Model } from "./types";
 const PUBLIC_COLUMNS =
   "id, slug, title, description, category, tags, license, author_name, author_url, source_url, glb_url, thumbnail_url, size_x_mm, size_y_mm, size_z_mm, base_price, featured, published, created_at";
 
-export async function getPublishedModels(): Promise<Model[]> {
-  "use cache";
-  cacheLife("hours");
-  cacheTag("models");
+const ONE_HOUR = 60 * 60;
 
+export const getPublishedModels = unstable_cache(fetchPublishedModels, ["published-models"], {
+  revalidate: ONE_HOUR,
+  tags: ["models"],
+});
+
+export function getModelBySlug(slug: string): Promise<Model | null> {
+  return unstable_cache(() => fetchModelBySlug(slug), ["model-by-slug", slug], {
+    revalidate: ONE_HOUR,
+    tags: ["models", `model:${slug}`],
+  })();
+}
+
+async function fetchPublishedModels(): Promise<Model[]> {
   if (!hasSupabase) return demoModels;
 
   const { data, error } = await createPublicClient()
@@ -26,11 +36,7 @@ export async function getPublishedModels(): Promise<Model[]> {
   return data as Model[];
 }
 
-export async function getModelBySlug(slug: string): Promise<Model | null> {
-  "use cache";
-  cacheLife("hours");
-  cacheTag("models", `model:${slug}`);
-
+async function fetchModelBySlug(slug: string): Promise<Model | null> {
   if (!hasSupabase) return demoModels.find((m) => m.slug === slug) ?? null;
 
   const { data, error } = await createPublicClient()
