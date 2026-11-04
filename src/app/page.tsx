@@ -6,15 +6,15 @@ import { ModelViewer } from "@/components/model-viewer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getPublishedModels } from "@/lib/catalog";
-import { materials } from "@/lib/options";
 import { availableFilaments } from "@/lib/palette";
-import { getPalette } from "@/lib/palette-server";
+import { materialsFor } from "@/lib/material-types";
+import { getMaterialTypes, getPalette } from "@/lib/palette-server";
 
 // ISR: se regenera en segundo plano como mucho una vez por hora.
 export const revalidate = 3600;
 
 export default async function HomePage() {
-  const [models, palette] = await Promise.all([getPublishedModels(), getPalette()]);
+  const [models, palette, materialTypes] = await Promise.all([getPublishedModels(), getPalette(), getMaterialTypes()]);
   const featured = models.filter((m) => m.featured);
   const hero = featured[0] ?? models[0];
 
@@ -52,7 +52,7 @@ export default async function HomePage() {
             <dl className="flex gap-8 pt-2">
               {[
                 [models.length, "modelos"],
-                [materials.length, "materiales"],
+                [materialsFor(materialTypes, null).length, "materiales"],
                 [availableFilaments(palette).length, "colores"],
               ].map(([n, label]) => (
                 <div key={label}>

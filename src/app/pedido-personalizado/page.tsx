@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Camera, PenTool, Printer, Sparkles } from "lucide-react";
 
 import { CustomOrderForm } from "@/components/custom-order-form";
-import { getPalette } from "@/lib/palette-server";
+import { getMaterialTypes, getPalette } from "@/lib/palette-server";
 
 // ISR: toma la paleta de filamentos actual (se invalida al editarla en el admin).
 export const revalidate = 3600;
@@ -21,7 +21,7 @@ const steps = [
 ];
 
 export default async function CustomOrderPage() {
-  const palette = await getPalette();
+  const [palette, materialTypes] = await Promise.all([getPalette(), getMaterialTypes()]);
   return (
     <div className="mx-auto grid max-w-6xl gap-12 px-4 py-12 lg:grid-cols-[1fr_1.1fr]">
       <div className="space-y-8">
@@ -50,7 +50,7 @@ export default async function CustomOrderPage() {
           ))}
         </ol>
       </div>
-      <CustomOrderForm palette={palette} />
+      <CustomOrderForm palette={palette} materialTypes={materialTypes} />
     </div>
   );
 }

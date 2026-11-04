@@ -73,7 +73,7 @@ export function deliveryFor(info: CapacityInfo, mode: ColorMode) {
  */
 export function estimatePrice(
   model: { base_price: number | null; multicolor_price: number | null },
-  choice: { size: string; colorMode: ColorMode; quantity: number },
+  choice: { size: string; colorMode: ColorMode; quantity: number; materialFactor?: number },
   pricing: PriceSettings,
 ) {
   if (model.base_price == null) return null;
@@ -84,7 +84,7 @@ export function estimatePrice(
       ? (model.multicolor_price ?? model.base_price * pricing.multicolor_price_factor)
       : model.base_price;
   const qty = Number.isInteger(choice.quantity) && choice.quantity > 0 ? choice.quantity : 1;
-  return Math.round((unit * sizeFactor) / 1000) * 1000 * qty;
+  return Math.round((unit * sizeFactor * (choice.materialFactor ?? 1)) / 1000) * 1000 * qty;
 }
 
 /** "lunes 10 de noviembre" */

@@ -29,6 +29,8 @@ export type Model = {
   color_zones: ColorZone[];
   /** El cliente no puede cambiar los colores de las zonas. */
   colors_locked: boolean;
+  /** Tipos de filamento con los que se puede pedir. null = todos los disponibles. */
+  allowed_materials: string[] | null;
   featured: boolean;
   published: boolean;
   created_at: string;

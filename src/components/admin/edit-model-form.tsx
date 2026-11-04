@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
-import { Loader2, Plus, Save, ScanSearch, Trash2 } from "lucide-react";
+import { useActionState, useEffect, useState } from "react";
+import { Info, Loader2, Plus, Save, ScanSearch, Trash2 } from "lucide-react";
 
 import { updateModel, type AdminFormState } from "@/app/actions/admin";
 import { ModelViewer } from "@/components/model-viewer";
@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { estimatePrice, type PriceSettings } from "@/lib/delivery";
+import type { MaterialType } from "@/lib/material-types";
 import { maxColors, sizes } from "@/lib/options";
 import { hexOf, type Filament } from "@/lib/palette";
 import type { ColorZone, Model } from "@/lib/types";
@@ -21,10 +22,12 @@ import { formatPrice } from "@/lib/utils";
 export function EditModelForm({
   model,
   palette,
+  materialTypes,
   pricing,
 }: {
   model: Model;
   palette: Filament[];
+  materialTypes: MaterialType[];
   pricing: PriceSettings | null;
 }) {
   const colors = palette;
@@ -34,29 +37,30 @@ export function EditModelForm({
   const [locked, setLocked] = useState(model.colors_locked);
   const [basePrice, setBasePrice] = useState(model.base_price?.toString() ?? "");
   const [multiPrice, setMultiPrice] = useState(model.multicolor_price?.toString() ?? "");
-  const [detectStatus, setDetectStatus] = useState<string | null>(null);
+  /** Partes (materiales con nombre) del GLB: null mientras se analiza, o si no se pudo leer. */
+  const [parts, setParts] = useState<{ name: string; hex: string }[] | null>(null);
+  const [partsError, setPartsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    import("@/lib/three/detect-materials")
+      .then(({ detectMaterials }) => detectMaterials(model.glb_url))
+      .then((found) => !cancelled && setParts(found))
+      .catch((e) => !cancelled && setPartsError(e instanceof Error ? e.message : String(e)));
+    return () => {
+      cancelled = true;
+    };
+  }, [model.glb_url]);
+  const multiPart = (parts?.length ?? 0) > 1;
 
   const distinct = new Set(zones.map((z) => z.color)).size;
   const materialColors = Object.fromEntries(
     zones.filter((z) => z.material && colorHex(z.color)).map((z) => [z.material!, colorHex(z.color)!]),
   );
 
-  async function detectZones() {
-    setDetectStatus("Leyendo el modelo 3D…");
-    try {
-      const { detectMaterials } = await import("@/lib/three/detect-materials");
-      const found = await detectMaterials(model.glb_url);
-      if (found.length === 0) {
-        setDetectStatus(
-          "El modelo 3D no tiene partes con colores separados (pasa con STL y con varios 3MF). Cargá las zonas a mano: se verán en la ficha, pero sin vista previa por zona.",
-        );
-        return;
-      }
-      setZones(found.map((m) => ({ name: m.name, color: nearestColor(palette, m.hex), material: m.name })));
-      setDetectStatus(`Encontré ${found.length} parte${found.length === 1 ? "" : "s"}. Renombralas y ajustá los colores.`);
-    } catch (e) {
-      setDetectStatus(`No se pudo leer el modelo: ${e instanceof Error ? e.message : String(e)}`);
-    }
+  function zonesFromParts() {
+    if (!parts) return;
+    setZones(parts.map((m) => ({ name: m.name, color: nearestColor(palette, m.hex), material: m.name })));
   }
 
   const priceRows =
@@ -153,26 +157,74 @@ export function EditModelForm({
             </table>
           )}
           <p className="text-xs text-muted-foreground">
-            Los multiplicadores por tamaño y el recargo multicolor se cambian en{" "}
-            <Link href="/admin/ajustes" className="underline">Ajustes</Link>.
+            Precios con el multiplicador ×1 de tipo de filamento. Los multiplicadores por tamaño y el recargo multicolor
+            se cambian en <Link href="/admin/ajustes" className="underline">Ajustes</Link>; los de cada tipo de filamento,
+            en <Link href="/admin/filamentos" className="underline">Filamentos</Link>.
           </p>
+        </fieldset>
+
+        <fieldset className="space-y-3 rounded-xl border-2 border-foreground/10 p-4">
+          <legend className="px-1 text-sm font-semibold">Tipos de filamento</legend>
+          <p className="text-xs text-muted-foreground">
+            Con cuáles se puede pedir este modelo. Si dejás todos marcados, se ofrecen todos los disponibles (y los que
+            agregues más adelante). Los tipos se editan en <Link href="/admin/filamentos" className="underline">Filamentos</Link>.
+          </p>
+          <div className="flex flex-wrap gap-x-5 gap-y-2">
+            {materialTypes.map((t) => (
+              <label key={t.id} className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  name="allowed_materials"
+                  value={t.id}
+                  defaultChecked={!model.allowed_materials?.length || model.allowed_materials.includes(t.id)}
+                  className="size-4 accent-primary"
+                />
+                {t.label}
+                {!t.available && <span className="text-xs text-muted-foreground">(sin stock)</span>}
+                {t.price_factor !== 1 && (
+                  <span className="text-xs text-muted-foreground">×{String(t.price_factor).replace(".", ",")}</span>
+                )}
+              </label>
+            ))}
+          </div>
         </fieldset>
 
         <fieldset className="space-y-3 rounded-xl border-2 border-foreground/10 p-4">
           <legend className="px-1 text-sm font-semibold">Zonas de color</legend>
           <p className="text-xs text-muted-foreground">
-            Sin zonas, el cliente elige un solo color para toda la pieza. Con zonas (pelo, ropa, piel…) ve los colores
-            originales y puede cambiarlos zona por zona, usando hasta {maxColors} colores distintos.
+            Sin zonas, el cliente elige un solo color para toda la pieza. Las zonas son para modelos multicolor cuyo
+            archivo viene separado en partes (pelo, ropa, piel…): cada zona se enlaza con una parte, el cliente ve los
+            colores originales y puede cambiarlos zona por zona, usando hasta {maxColors} colores distintos.
           </p>
-          <Button type="button" variant="outline" size="sm" onClick={detectZones}>
-            <ScanSearch /> Detectar partes del modelo 3D
-          </Button>
-          {detectStatus && <p className="text-xs text-muted-foreground">{detectStatus}</p>}
+          <div className="flex gap-2 rounded-lg border-2 border-foreground/10 bg-muted/40 p-3 text-xs">
+            <Info className="mt-0.5 size-4 shrink-0 text-primary" />
+            {partsError ? (
+              <p>No se pudo analizar el modelo 3D ({partsError}).</p>
+            ) : parts === null ? (
+              <p>Analizando el modelo 3D…</p>
+            ) : multiPart ? (
+              <div className="space-y-2">
+                <p>
+                  El archivo 3D viene en <strong>{parts.length} partes</strong>: {parts.map((p) => p.name).join(", ")}.
+                  Enlazá cada zona con su parte para que el visor la pinte.
+                </p>
+                <Button type="button" variant="outline" size="sm" onClick={zonesFromParts}>
+                  <ScanSearch /> Crear una zona por parte
+                </Button>
+              </div>
+            ) : (
+              <p>
+                <strong>Este modelo 3D es de una sola pieza.</strong> El visor no puede pintar zonas por separado, así que
+                lo normal es dejarlo sin zonas (un solo color). Si igual lo imprimís en varios colores, por ejemplo
+                cambiando de filamento a cierta altura, podés cargar zonas, pero el cliente no las va a ver en el 3D.
+              </p>
+            )}
+          </div>
 
           {zones.length > 0 && (
             <ul className="space-y-2">
               {zones.map((z, i) => (
-                <li key={i} className="flex items-center gap-2">
+                <li key={i} className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
                   <span
                     className="size-8 shrink-0 rounded-full border-2 border-foreground/20"
                     style={{ backgroundColor: colorHex(z.color) ?? undefined }}
@@ -183,6 +235,24 @@ export function EditModelForm({
                     placeholder="Pelo"
                     onChange={(e) => setZones(zones.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))}
                   />
+                  {multiPart && (
+                    <NativeSelect
+                      aria-label="Parte del modelo 3D"
+                      value={z.material ?? ""}
+                      onChange={(e) =>
+                        setZones(
+                          zones.map((x, j) => (j === i ? { ...x, material: e.target.value || undefined } : x)),
+                        )
+                      }
+                    >
+                      <option value="">Sin enlazar</option>
+                      {parts!.map((p) => (
+                        <option key={p.name} value={p.name}>
+                          Parte: {p.name}
+                        </option>
+                      ))}
+                    </NativeSelect>
+                  )}
                   <NativeSelect
                     aria-label="Color original"
                     value={z.color}

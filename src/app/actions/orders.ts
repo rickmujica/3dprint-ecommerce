@@ -4,9 +4,10 @@ import { redirect } from "next/navigation";
 
 import { capacityInfo, deliveryFor, estimatePrice, getCapacity, type CapacityInfo } from "@/lib/capacity";
 import { getModelBySlug } from "@/lib/catalog";
-import { colorModes, materials, maxColors, sizes } from "@/lib/options";
+import { materialsFor, type MaterialType } from "@/lib/material-types";
+import { colorModes, maxColors, sizes } from "@/lib/options";
 import { availableFilaments, type Filament } from "@/lib/palette";
-import { getPalette } from "@/lib/palette-server";
+import { getMaterialTypes, getPalette } from "@/lib/palette-server";
 import { orderCode } from "@/lib/order-code";
 import { getModelsBucket } from "@/lib/r2";
 import { hasSupabase } from "@/lib/supabase/env";
@@ -28,7 +29,7 @@ function str(form: FormData, key: string, max = 200) {
 }
 
 
-function readCommon(form: FormData) {
+function readCommon(form: FormData, materialOptions: MaterialType[]) {
   const fields: Record<string, string> = {
     material: str(form, "material", 20),
     size: str(form, "size", 20),
@@ -44,7 +45,7 @@ function readCommon(form: FormData) {
   if (fields.customer_name.length < 2) error = "Decinos tu nombre.";
   else if (!fields.email && !fields.phone) error = "Dejanos un email o un teléfono para contactarte.";
   else if (fields.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(fields.email)) error = "El email no parece válido.";
-  else if (!materials.some((m) => m.id === fields.material)) error = "Elegí un material.";
+  else if (!materialOptions.some((m) => m.id === fields.material)) error = "Elegí un material de la lista.";
   else if (!sizes.some((s) => s.id === fields.size)) error = "Elegí un tamaño.";
   else if (!Number.isInteger(qty) || qty < 1 || qty > 100) error = "La cantidad tiene que estar entre 1 y 100.";
 
@@ -173,8 +174,13 @@ export async function createCatalogOrder(_prev: OrderFormState, form: FormData):
   // Campo trampa para bots: los humanos no lo ven.
   if (str(form, "website")) redirect("/pedido/gracias");
 
-  const common = readCommon(form);
-  const [model, palette] = await Promise.all([getModelBySlug(str(form, "model_slug", 120)), getPalette()]);
+  const [model, palette, materialTypes] = await Promise.all([
+    getModelBySlug(str(form, "model_slug", 120)),
+    getPalette(),
+    getMaterialTypes(),
+  ]);
+  const materialOptions = materialsFor(materialTypes, model?.allowed_materials);
+  const common = readCommon(form, materialOptions);
   const colorChoice = model?.color_zones.length
     ? readZoneColors(form, model, palette)
     : readFreeColors(form, false, palette);
@@ -203,7 +209,16 @@ export async function createCatalogOrder(_prev: OrderFormState, form: FormData):
     fields,
     { modelo: model.title },
     (info) =>
-      estimatePrice(model, { size: fields.size, colorMode: colorChoice.colorMode, quantity: common.qty }, info.pricing),
+      estimatePrice(
+        model,
+        {
+          size: fields.size,
+          colorMode: colorChoice.colorMode,
+          quantity: common.qty,
+          materialFactor: materialOptions.find((m) => m.id === fields.material)?.price_factor,
+        },
+        info.pricing,
+      ),
   );
   if (result.state) return result.state;
   redirect(result.redirectTo);
@@ -212,8 +227,9 @@ export async function createCatalogOrder(_prev: OrderFormState, form: FormData):
 export async function createCustomOrder(_prev: OrderFormState, form: FormData): Promise<OrderFormState> {
   if (str(form, "website")) redirect("/pedido/gracias");
 
-  const common = readCommon(form);
-  const colorChoice = readFreeColors(form, true, await getPalette());
+  const [palette, materialTypes] = await Promise.all([getPalette(), getMaterialTypes()]);
+  const common = readCommon(form, materialsFor(materialTypes, null));
+  const colorChoice = readFreeColors(form, true, palette);
   const description = str(form, "description", 4000);
   const fields: Record<string, string> = { ...common.fields, ...colorChoice.fields, description };
   const error = common.error ?? colorChoice.error;

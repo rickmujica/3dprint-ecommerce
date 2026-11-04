@@ -7,7 +7,8 @@ import { requireAdmin } from "@/lib/auth";
 import { capacityInfo, deliveryFor, getCapacity } from "@/lib/capacity";
 import { licenses, orderStatuses, sizes, waitlistStatuses } from "@/lib/options";
 import { normalizePalette, type Filament } from "@/lib/palette";
-import { getPalette } from "@/lib/palette-server";
+import { normalizeMaterialTypes } from "@/lib/material-types";
+import { getMaterialTypes, getPalette } from "@/lib/palette-server";
 import { orderCode } from "@/lib/order-code";
 import { isSafeKey, publicFileUrl } from "@/lib/r2";
 import type { ColorZone, LicenseId, OrderStatus, WaitlistEntry, WaitlistStatus } from "@/lib/types";
@@ -114,8 +115,15 @@ export async function updateModel(_prev: AdminFormState, form: FormData): Promis
   const id = str(form, "id", 40);
   const title = str(form, "title", 120);
   if (!title) return { error: "Falta el título." };
-  const zones = parseZones(str(form, "color_zones", 8000), await getPalette());
+  const [palette, materialTypes] = await Promise.all([getPalette(), getMaterialTypes()]);
+  const zones = parseZones(str(form, "color_zones", 8000), palette);
   if (typeof zones === "string") return { error: zones };
+  const allowed = form.getAll("allowed_materials").filter((v): v is string => typeof v === "string");
+  if (allowed.length === 0) return { error: "Elegí al menos un tipo de filamento." };
+  // Todos marcados = sin restricción (así los tipos nuevos se ofrecen solos).
+  const allowedMaterials = materialTypes.every((t) => allowed.includes(t.id))
+    ? null
+    : allowed.filter((id) => materialTypes.some((t) => t.id === id));
 
   const { data, error } = await supabase
     .from("models")
@@ -131,6 +139,7 @@ export async function updateModel(_prev: AdminFormState, form: FormData): Promis
       multicolor_price: num(form, "multicolor_price"),
       color_zones: zones,
       colors_locked: zones.length > 0 && form.get("colors_locked") === "on",
+      allowed_materials: allowedMaterials,
       featured: form.get("featured") === "on",
       published: form.get("published") === "on",
     })
@@ -168,6 +177,38 @@ export async function updateFilaments(_prev: AdminFormState, form: FormData): Pr
   if (!palette.some((f) => f.available)) return { error: "Tiene que haber al menos un filamento disponible." };
 
   const { error } = await supabase.from("shop_settings").update({ filaments: palette }).eq("id", true);
+  if (error) return { error: error.message };
+  updateTag("palette");
+  refresh();
+  return { ok: true };
+}
+
+export async function updateMaterialTypes(
+  _prev: AdminFormState,
+  form: FormData,
+): Promise<AdminFormState & { ok?: boolean }> {
+  const { supabase } = await requireAdmin();
+  let raw: unknown;
+  try {
+    raw = JSON.parse(str(form, "material_types", 20000) || "[]");
+  } catch {
+    return { error: "Lista de tipos inválida." };
+  }
+  if (!Array.isArray(raw)) return { error: "Lista de tipos inválida." };
+  const withIds = (raw as Record<string, unknown>[]).map((t) => ({
+    ...t,
+    id: typeof t.id === "string" && t.id ? t.id : slugify(String(t.label ?? "")).slice(0, 40),
+    price_factor: typeof t.price_factor === "string" ? Number(t.price_factor.replace(",", ".")) : t.price_factor,
+  }));
+  const ids = withIds.map((t) => t.id);
+  const dup = ids.find((id, i) => ids.indexOf(id) !== i);
+  if (dup) return { error: `Hay dos tipos con el mismo nombre ("${dup}").` };
+  const types = normalizeMaterialTypes(withIds);
+  if (!types || types.length !== withIds.length)
+    return { error: "Cada tipo necesita un nombre y un multiplicador de precio mayor a 0 (ej. 1 o 1,3)." };
+  if (!types.some((t) => t.available)) return { error: "Tiene que haber al menos un tipo disponible." };
+
+  const { error } = await supabase.from("shop_settings").update({ material_types: types }).eq("id", true);
   if (error) return { error: error.message };
   updateTag("palette");
   refresh();
