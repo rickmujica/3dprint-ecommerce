@@ -47,5 +47,40 @@ export type Order = {
   reference_key: string | null;
   status: OrderStatus;
   quote_amount: number | null;
+  color_mode: ColorMode;
+  /** Fecha estimada de entrega (YYYY-MM-DD) que se le mostró al cliente. */
+  estimated_delivery: string | null;
   created_at: string;
+};
+
+export type ColorMode = "mono" | "multi";
+
+export type WaitlistStatus = "pendiente" | "contactado" | "convertido" | "descartado";
+
+/** Promesa de recontacto: un pedido que llegó con la cola llena. */
+export type WaitlistEntry = {
+  id: string;
+  kind: "catalogo" | "personalizado";
+  model_id: string | null;
+  model_title: string | null;
+  customer_name: string;
+  email: string;
+  phone: string | null;
+  material: string;
+  color_mode: ColorMode;
+  color: string | null;
+  size: string;
+  quantity: number;
+  notes: string | null;
+  reference_key: string | null;
+  status: WaitlistStatus;
+  order_id: string | null;
+  contacted_at: string | null;
+  created_at: string;
+};
+
+export type ShopSettings = {
+  accepting_orders: boolean;
+  max_queue: number;
+  prints_per_day: number;
 };

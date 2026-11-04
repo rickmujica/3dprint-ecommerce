@@ -23,8 +23,10 @@ async function Gate({ children }: { children: React.ReactNode }) {
     <div className="space-y-8">
       <div className="flex flex-wrap items-center gap-2 border-b-2 border-foreground/10 pb-4">
         <Button asChild variant="ghost" size="sm"><Link href="/admin">Pedidos</Link></Button>
+        <Button asChild variant="ghost" size="sm"><Link href="/admin/recontacto">Recontacto</Link></Button>
         <Button asChild variant="ghost" size="sm"><Link href="/admin/modelos">Modelos</Link></Button>
         <Button asChild variant="ghost" size="sm"><Link href="/admin/importar">Importar</Link></Button>
+        <Button asChild variant="ghost" size="sm"><Link href="/admin/ajustes">Ajustes</Link></Button>
         <Button asChild variant="extrude" size="sm"><Link href="/admin/modelos/nuevo">Nuevo modelo</Link></Button>
         <form action={signOut} className="ml-auto flex items-center gap-3 text-sm text-muted-foreground">
           {admin.email}

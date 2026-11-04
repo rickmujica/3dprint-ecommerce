@@ -1,4 +1,4 @@
-import type { LicenseId, OrderStatus } from "./types";
+import type { ColorMode, LicenseId, OrderStatus, WaitlistStatus } from "./types";
 
 export const materials = [
   { id: "PLA", label: "PLA", hint: "Rígido y económico. Ideal para decoración." },
@@ -17,6 +17,14 @@ export const colors = [
   { id: "naranja", label: "Naranja", hex: "#f97316" },
   { id: "gris", label: "Gris", hex: "#9ca3af" },
 ] as const;
+
+export const colorModes: { id: ColorMode; label: string; hint: string }[] = [
+  { id: "mono", label: "Un color", hint: "La pieza entera en un solo filamento." },
+  { id: "multi", label: "Multicolor", hint: "Hasta 4 colores en la misma pieza." },
+];
+
+/** Máximo de colores en una impresión multicolor (cantidad de filamentos que carga la impresora a la vez). */
+export const maxColors = 4;
 
 export const sizes = [
   { id: "50", label: "Chico (50%)" },
@@ -47,3 +55,21 @@ export const orderStatuses: { id: OrderStatus; label: string }[] = [
   { id: "entregado", label: "Entregado" },
   { id: "cancelado", label: "Cancelado" },
 ];
+
+/** Estados que ocupan lugar en la cola de la impresora (igual que private.queue_size() en la base). */
+export const queuedStatuses: OrderStatus[] = ["nuevo", "cotizado", "pagado", "imprimiendo"];
+
+export const waitlistStatuses: { id: WaitlistStatus; label: string }[] = [
+  { id: "pendiente", label: "Pendiente" },
+  { id: "contactado", label: "Contactado" },
+  { id: "convertido", label: "Convertido en pedido" },
+  { id: "descartado", label: "Descartado" },
+];
+
+export function colorLabels(color: string | null) {
+  if (!color) return "";
+  return color
+    .split(",")
+    .map((id) => colors.find((c) => c.id === id)?.label ?? id)
+    .join(" + ");
+}

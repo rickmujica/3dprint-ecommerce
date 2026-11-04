@@ -4,9 +4,11 @@ import { refresh, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { requireAdmin } from "@/lib/auth";
-import { licenses, orderStatuses } from "@/lib/options";
+import { capacityInfo, getCapacity } from "@/lib/capacity";
+import { licenses, orderStatuses, waitlistStatuses } from "@/lib/options";
+import { orderCode } from "@/lib/order-code";
 import { isSafeKey, publicFileUrl } from "@/lib/r2";
-import type { LicenseId, OrderStatus } from "@/lib/types";
+import type { LicenseId, OrderStatus, WaitlistEntry, WaitlistStatus } from "@/lib/types";
 import { slugify } from "@/lib/utils";
 
 export type AdminFormState = { error?: string };
@@ -92,6 +94,71 @@ export async function updateOrder(form: FormData) {
     .from("orders")
     .update({ status, quote_amount: num(form, "quote_amount") })
     .eq("id", id);
+  refresh();
+}
+
+export async function updateSettings(_prev: AdminFormState, form: FormData): Promise<AdminFormState & { ok?: boolean }> {
+  const { supabase } = await requireAdmin();
+  const maxQueue = num(form, "max_queue");
+  const perDay = num(form, "prints_per_day");
+  if (maxQueue == null || !Number.isInteger(maxQueue) || maxQueue < 0 || maxQueue > 1000)
+    return { error: "El tope de cola tiene que ser un número entero entre 0 y 1000." };
+  if (perDay == null || perDay <= 0 || perDay > 100)
+    return { error: "Las impresiones por día tienen que ser un número mayor a 0 (podés usar decimales, ej. 0,5)." };
+
+  const { error } = await supabase
+    .from("shop_settings")
+    .update({ accepting_orders: form.get("accepting_orders") === "on", max_queue: maxQueue, prints_per_day: perDay })
+    .eq("id", true);
+  if (error) return { error: error.message };
+  refresh();
+  return { ok: true };
+}
+
+export async function updateWaitlist(form: FormData) {
+  const { supabase } = await requireAdmin();
+  const id = str(form, "id", 40);
+  const status = str(form, "status", 20) as WaitlistStatus;
+  if (!waitlistStatuses.some((s) => s.id === status) || status === "convertido") return;
+  await supabase
+    .from("waitlist")
+    .update({ status, ...(status === "contactado" && { contacted_at: new Date().toISOString() }) })
+    .eq("id", id);
+  refresh();
+}
+
+/** Pasa una promesa de recontacto a la cola como pedido nuevo, con fecha estimada según la cola actual. */
+export async function convertWaitlist(form: FormData) {
+  const { supabase } = await requireAdmin();
+  const id = str(form, "id", 40);
+  const { data } = await supabase.from("waitlist").select("*").eq("id", id).maybeSingle();
+  const entry = data as WaitlistEntry | null;
+  if (!entry || entry.status === "convertido") return;
+
+  const info = capacityInfo(await getCapacity());
+  const { data: order, error } = await supabase
+    .from("orders")
+    .insert({
+      code: orderCode(),
+      kind: entry.kind,
+      model_id: entry.model_id,
+      model_title: entry.model_title,
+      customer_name: entry.customer_name,
+      email: entry.email,
+      phone: entry.phone,
+      material: entry.material,
+      color_mode: entry.color_mode,
+      color: entry.color,
+      size: entry.size,
+      quantity: entry.quantity,
+      notes: entry.notes,
+      reference_key: entry.reference_key,
+      estimated_delivery: info.estimatedDelivery,
+    })
+    .select("id")
+    .single();
+  if (error || !order) return;
+  await supabase.from("waitlist").update({ status: "convertido", order_id: order.id }).eq("id", id);
   refresh();
 }
 

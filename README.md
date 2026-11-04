@@ -11,7 +11,9 @@ Next.js 16 corriendo en **Cloudflare Workers** (OpenNext), con **Supabase** (bas
 - **Visor 3D** (`<model-viewer>`): rotar, zoom, realidad aumentada en el celular. Al elegir un color, el modelo se tiñe en vivo.
 - **Pedido desde la ficha**: material, color, tamaño, cantidad y contacto. Genera un código (`P-XXXXXX`) y ofrece seguir por WhatsApp.
 - **Pedido personalizado**: descripción + foto de referencia (se guarda privada en R2).
-- **Panel admin** (`/admin`, link "Acceso admin" en el pie): subir modelos en STL, OBJ, 3MF o GLB. El navegador lo convierte a un GLB liviano, genera la miniatura y mide el tamaño en mm. El original queda privado. También lista los pedidos y permite cambiar estado y cotización.
+- **Panel admin** (`/admin`, link "Acceso admin" en el pie): subir modelos en STL, OBJ, 3MF o GLB. El navegador lo convierte a un GLB liviano, genera la miniatura y mide el tamaño en mm. El original queda privado. También lista los pedidos (filtrables por estado, con la cola en orden de llegada) y permite cambiar estado y cotización.
+- **Capacidad de impresión** (`/admin/ajustes`): interruptor para tomar pedidos, cantidad tope de pedidos en cola e impresiones posibles por día. Al pedir, el cliente ve la fecha estimada de entrega (cola ÷ impresiones por día). Con la cola llena, el formulario pasa a "Avisame cuando haya lugar": guarda el pedido y el email como **promesa de recontacto** (`/admin/recontacto`), desde donde se le escribe y se pasa a pedidos. El tope lo controla también la base (RLS), no solo la web.
+- **Multicolor**: el cliente elige un color o multicolor (de 2 a 4 colores).
 - **Licencias**: cada modelo guarda licencia, autor y enlace al original. Solo se aceptan licencias que permiten vender impresiones (CC0, CC BY, CC BY-SA, comercial, propio o con permiso). Las CC "NC" quedan afuera a propósito.
 - **SEO**: páginas prerenderizadas, metadata y Open Graph por modelo, JSON-LD `Product`, `sitemap.xml` y `robots.txt`.
 - **Tema** blanco/negro con acentos de color, interruptor claro/oscuro y detalles "3D" (sombras extruidas, tarjetas que se inclinan, grilla de cama de impresión). Componentes compatibles con shadcn/ui.
