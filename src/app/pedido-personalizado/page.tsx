@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import { Camera, PenTool, Printer, Sparkles } from "lucide-react";
 
 import { CustomOrderForm } from "@/components/custom-order-form";
+import { getPalette } from "@/lib/palette-server";
+
+// ISR: toma la paleta de filamentos actual (se invalida al editarla en el admin).
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: "Pedido personalizado de impresión 3D",
@@ -16,7 +20,8 @@ const steps = [
   { icon: Printer, title: "Cotización e impresión", text: "Te pasamos precio y plazo. Con tu OK, lo imprimimos." },
 ];
 
-export default function CustomOrderPage() {
+export default async function CustomOrderPage() {
+  const palette = await getPalette();
   return (
     <div className="mx-auto grid max-w-6xl gap-12 px-4 py-12 lg:grid-cols-[1fr_1.1fr]">
       <div className="space-y-8">
@@ -45,7 +50,7 @@ export default function CustomOrderPage() {
           ))}
         </ol>
       </div>
-      <CustomOrderForm />
+      <CustomOrderForm palette={palette} />
     </div>
   );
 }

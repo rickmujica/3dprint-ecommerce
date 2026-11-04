@@ -9,8 +9,9 @@ import { ColorPicker, ContactFields, FormError, MaterialPicker, SizeAndQuantity 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import type { Filament } from "@/lib/palette";
 
-export function CustomOrderForm() {
+export function CustomOrderForm({ palette }: { palette: Filament[] }) {
   const [state, action, pending] = useActionState<OrderFormState, FormData>(createCustomOrder, {});
   const [preview, setPreview] = useState<string | null>(null);
   const [colorMode, setColorMode] = useState<"mono" | "multi">(state.fields?.color_mode === "multi" ? "multi" : "mono");
@@ -64,6 +65,7 @@ export function CustomOrderForm() {
 
       <MaterialPicker defaultValue={state.fields?.material} />
       <ColorPicker
+        palette={palette}
         defaultMode={state.fields?.color_mode}
         defaultColors={state.fields?.color ? state.fields.color.split(",") : []}
         onModeChange={setColorMode}

@@ -6,7 +6,8 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 
-import { colorModes, colors, materials, maxColors, sizes } from "@/lib/options";
+import { colorModes, materials, maxColors, sizes } from "@/lib/options";
+import { availableFilaments, type Filament } from "@/lib/palette";
 import { cn } from "@/lib/utils";
 
 type Fields = Record<string, string> | undefined;
@@ -36,12 +37,14 @@ export function MaterialPicker({ defaultValue = "PLA" }: { defaultValue?: string
  * `onTint` avisa el color con el que teñir la vista previa (el primero elegido).
  */
 export function ColorPicker({
+  palette,
   defaultMode = "mono",
   defaultColors = [],
   onTint,
   onModeChange,
   allowMulti = true,
 }: {
+  palette: Filament[];
   defaultMode?: string;
   defaultColors?: string[];
   onTint?: (hex: string | null) => void;
@@ -55,6 +58,7 @@ export function ColorPicker({
     onModeChange?.(m);
   };
   const [picked, setPicked] = useState<string[]>(defaultColors);
+  const colors = availableFilaments(palette);
 
   function update(next: string[]) {
     setPicked(next);

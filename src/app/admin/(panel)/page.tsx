@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { requireAdmin } from "@/lib/auth";
+import { colorLabels } from "@/lib/palette";
+import { getPalette } from "@/lib/palette-server";
 import { capacityInfo, formatDeliveryDate, getCapacity } from "@/lib/capacity";
-import { colorLabels, orderStatuses, queuedStatuses } from "@/lib/options";
+import { orderStatuses, queuedStatuses } from "@/lib/options";
 import type { Order, OrderStatus } from "@/lib/types";
 import { formatPrice } from "@/lib/utils";
 
@@ -31,9 +33,10 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin">) 
       : query.order("created_at", { ascending: false });
   if (filter.id !== "cola" && filter.id !== "todos") query = query.eq("status", filter.id as OrderStatus);
 
-  const [{ data, error }, capacity, { count: waiting }] = await Promise.all([
+  const [{ data, error }, capacity, palette, { count: waiting }] = await Promise.all([
     query,
     getCapacity().catch(() => null),
+    getPalette(),
     supabase.from("waitlist").select("id", { count: "exact", head: true }).eq("status", "pendiente"),
   ]);
   const orders = (data ?? []) as Order[];
@@ -84,11 +87,11 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin">) 
               <p>
                 {o.quantity} × {o.material}
                 {o.color_mode === "multi" ? " · multicolor" : ""}
-                {!o.color_zones?.length && o.color && ` · ${colorLabels(o.color)}`} · tamaño {o.size}
+                {!o.color_zones?.length && o.color && ` · ${colorLabels(palette, o.color)}`} · tamaño {o.size}
               </p>
               {o.color_zones && o.color_zones.length > 0 && (
                 <p className="text-muted-foreground">
-                  {o.color_zones.map((z) => `${z.name}: ${colorLabels(z.color)}`).join(" · ")}
+                  {o.color_zones.map((z) => `${z.name}: ${colorLabels(palette, z.color)}`).join(" · ")}
                 </p>
               )}
               {o.estimated_price != null && <p>Precio estimado: {formatPrice(o.estimated_price)}</p>}

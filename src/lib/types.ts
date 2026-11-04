@@ -65,7 +65,7 @@ export type Order = {
 
 export type ColorZone = {
   name: string;
-  /** Id de color de la paleta (options.colors). */
+  /** Id de filamento de la paleta (ver lib/palette.ts). */
   color: string;
   /** Material del GLB que se tiñe en la vista previa (opcional). */
   material?: string;

@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Lock } from "lucide-react";
 
-import { colorHex, colors, maxColors } from "@/lib/options";
+import { maxColors } from "@/lib/options";
+import { availableFilaments, hexOf, labelOf, type Filament } from "@/lib/palette";
 import type { ColorMode, ColorZone } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -28,11 +29,13 @@ const zoneModes: { id: ZoneMode; label: string; hint: string }[] = [
  * cambiar el color de cada zona o imprimir todo de un color, salvo que el modelo tenga colores fijos.
  */
 export function ZoneColorPicker({
+  palette,
   zones,
   locked,
   fields,
   onPreview,
 }: {
+  palette: Filament[];
   zones: ColorZone[];
   locked: boolean;
   fields?: Record<string, string>;
@@ -43,7 +46,9 @@ export function ZoneColorPicker({
     return !locked && (m === "custom" || m === "mono") ? m : "original";
   });
   const [custom, setCustom] = useState<string[]>(() => zones.map((z, i) => fields?.[`zone_${i}`] || z.color));
-  const [single, setSingle] = useState<string>(fields?.color || zones[0]?.color || colors[0].id);
+  const colors = availableFilaments(palette);
+  const colorHex = (id: string) => hexOf(palette, id);
+  const [single, setSingle] = useState<string>(fields?.color || zones[0]?.color || colors[0]?.id || "");
 
   const current = mode === "custom" ? custom : zones.map((z) => z.color);
   const distinct = useMemo(() => [...new Set(current)], [current]);
@@ -67,7 +72,7 @@ export function ZoneColorPicker({
     });
     // `current` se deriva de mode/custom; no hace falta como dependencia.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, custom, single, zones, distinct.length, onPreview]);
+  }, [mode, custom, single, zones, distinct.length, onPreview, palette]);
 
   return (
     <div className="space-y-3">
@@ -105,7 +110,7 @@ export function ZoneColorPicker({
         <ul className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
           {zones.map((z) => (
             <li key={z.name} className="flex items-center gap-2">
-              <Dot id={z.color} /> {z.name}
+              <Dot hex={colorHex(z.color)} /> {z.name}
             </li>
           ))}
         </ul>
@@ -117,9 +122,10 @@ export function ZoneColorPicker({
             <fieldset key={z.name} className="space-y-1.5">
               <legend className="text-sm">
                 <span className="font-medium">{z.name}</span>
-                <span className="text-muted-foreground"> · {colors.find((c) => c.id === custom[i])?.label}</span>
+                <span className="text-muted-foreground"> · {labelOf(palette, custom[i])}</span>
               </legend>
               <Swatches
+                colors={colors}
                 name={`zone_${i}`}
                 value={custom[i]}
                 onChange={(id) => setCustom((prev) => prev.map((c, j) => (j === i ? id : c)))}
@@ -137,25 +143,35 @@ export function ZoneColorPicker({
         <fieldset className="space-y-1.5">
           <legend className="text-sm">
             <span className="font-medium">Color</span>
-            <span className="text-muted-foreground"> · {colors.find((c) => c.id === single)?.label}</span>
+            <span className="text-muted-foreground"> · {labelOf(palette, single)}</span>
           </legend>
-          <Swatches name="color" value={single} onChange={setSingle} />
+          <Swatches colors={colors} name="color" value={single} onChange={setSingle} />
         </fieldset>
       )}
     </div>
   );
 }
 
-function Dot({ id }: { id: string }) {
+function Dot({ hex }: { hex: string | null }) {
   return (
     <span
       className="inline-block size-5 rounded-full border-2 border-foreground/20"
-      style={{ backgroundColor: colorHex(id) ?? undefined }}
+      style={{ backgroundColor: hex ?? undefined }}
     />
   );
 }
 
-function Swatches({ name, value, onChange }: { name: string; value: string; onChange: (id: string) => void }) {
+function Swatches({
+  colors,
+  name,
+  value,
+  onChange,
+}: {
+  colors: Filament[];
+  name: string;
+  value: string;
+  onChange: (id: string) => void;
+}) {
   return (
     <div className="flex flex-wrap gap-2">
       {colors.map((c) => (

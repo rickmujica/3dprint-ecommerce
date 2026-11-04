@@ -4,7 +4,9 @@ import { redirect } from "next/navigation";
 
 import { capacityInfo, deliveryFor, estimatePrice, getCapacity, type CapacityInfo } from "@/lib/capacity";
 import { getModelBySlug } from "@/lib/catalog";
-import { colorModes, colors, materials, maxColors, sizes } from "@/lib/options";
+import { colorModes, materials, maxColors, sizes } from "@/lib/options";
+import { availableFilaments, type Filament } from "@/lib/palette";
+import { getPalette } from "@/lib/palette-server";
 import { orderCode } from "@/lib/order-code";
 import { getModelsBucket } from "@/lib/r2";
 import { hasSupabase } from "@/lib/supabase/env";
@@ -25,7 +27,6 @@ function str(form: FormData, key: string, max = 200) {
   return typeof v === "string" ? v.trim().slice(0, max) : "";
 }
 
-const isColor = (id: string) => colors.some((c) => c.id === id);
 
 function readCommon(form: FormData) {
   const fields: Record<string, string> = {
@@ -60,7 +61,8 @@ type ColorChoice = {
 };
 
 /** Pedido personalizado o modelo sin zonas: un color, o multicolor libre (2 a maxColors). */
-function readFreeColors(form: FormData, allowMulti: boolean): ColorChoice {
+function readFreeColors(form: FormData, allowMulti: boolean, palette: Filament[]): ColorChoice {
+  const isColor = (id: string) => availableFilaments(palette).some((c) => c.id === id);
   const mode = (allowMulti && str(form, "color_mode", 10)) || "mono";
   const picked = form
     .getAll("color")
@@ -78,7 +80,8 @@ function readFreeColors(form: FormData, allowMulti: boolean): ColorChoice {
 }
 
 /** Modelo con zonas: colores originales, personalizados por zona o todo de un color. */
-function readZoneColors(form: FormData, model: Model): ColorChoice {
+function readZoneColors(form: FormData, model: Model, palette: Filament[]): ColorChoice {
+  const isColor = (id: string) => availableFilaments(palette).some((c) => c.id === id);
   const zoneMode = str(form, "zone_mode", 10) || "original";
   const fields: Record<string, string> = { zone_mode: zoneMode, color: str(form, "color", 20) };
   model.color_zones.forEach((_, i) => (fields[`zone_${i}`] = str(form, `zone_${i}`, 20)));
@@ -171,8 +174,10 @@ export async function createCatalogOrder(_prev: OrderFormState, form: FormData):
   if (str(form, "website")) redirect("/pedido/gracias");
 
   const common = readCommon(form);
-  const model = await getModelBySlug(str(form, "model_slug", 120));
-  const colorChoice = model?.color_zones.length ? readZoneColors(form, model) : readFreeColors(form, false);
+  const [model, palette] = await Promise.all([getModelBySlug(str(form, "model_slug", 120)), getPalette()]);
+  const colorChoice = model?.color_zones.length
+    ? readZoneColors(form, model, palette)
+    : readFreeColors(form, false, palette);
   const fields: Record<string, string> = { ...common.fields, ...colorChoice.fields };
   if (!model) return { error: "Ese modelo ya no está disponible.", fields };
   const error = common.error ?? colorChoice.error;
@@ -208,7 +213,7 @@ export async function createCustomOrder(_prev: OrderFormState, form: FormData): 
   if (str(form, "website")) redirect("/pedido/gracias");
 
   const common = readCommon(form);
-  const colorChoice = readFreeColors(form, true);
+  const colorChoice = readFreeColors(form, true, await getPalette());
   const description = str(form, "description", 4000);
   const fields: Record<string, string> = { ...common.fields, ...colorChoice.fields, description };
   const error = common.error ?? colorChoice.error;

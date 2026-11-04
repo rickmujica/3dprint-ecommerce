@@ -13,11 +13,22 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { estimatePrice, type PriceSettings } from "@/lib/delivery";
-import { colorHex, colors, maxColors, sizes } from "@/lib/options";
+import { maxColors, sizes } from "@/lib/options";
+import { hexOf, type Filament } from "@/lib/palette";
 import type { ColorZone, Model } from "@/lib/types";
 import { formatPrice } from "@/lib/utils";
 
-export function EditModelForm({ model, pricing }: { model: Model; pricing: PriceSettings | null }) {
+export function EditModelForm({
+  model,
+  palette,
+  pricing,
+}: {
+  model: Model;
+  palette: Filament[];
+  pricing: PriceSettings | null;
+}) {
+  const colors = palette;
+  const colorHex = (id: string) => hexOf(palette, id);
   const [state, action, saving] = useActionState<AdminFormState & { ok?: boolean }, FormData>(updateModel, {});
   const [zones, setZones] = useState<ColorZone[]>(model.color_zones ?? []);
   const [locked, setLocked] = useState(model.colors_locked);
@@ -41,7 +52,7 @@ export function EditModelForm({ model, pricing }: { model: Model; pricing: Price
         );
         return;
       }
-      setZones(found.map((m) => ({ name: m.name, color: nearestColor(m.hex), material: m.name })));
+      setZones(found.map((m) => ({ name: m.name, color: nearestColor(palette, m.hex), material: m.name })));
       setDetectStatus(`Encontré ${found.length} parte${found.length === 1 ? "" : "s"}. Renombralas y ajustá los colores.`);
     } catch (e) {
       setDetectStatus(`No se pudo leer el modelo: ${e instanceof Error ? e.message : String(e)}`);
@@ -178,7 +189,10 @@ export function EditModelForm({ model, pricing }: { model: Model; pricing: Price
                     onChange={(e) => setZones(zones.map((x, j) => (j === i ? { ...x, color: e.target.value } : x)))}
                   >
                     {colors.map((c) => (
-                      <option key={c.id} value={c.id}>{c.label}</option>
+                      <option key={c.id} value={c.id}>
+                        {c.label}
+                        {c.available ? "" : " (sin stock)"}
+                      </option>
                     ))}
                   </NativeSelect>
                   <Button
@@ -250,12 +264,12 @@ export function EditModelForm({ model, pricing }: { model: Model; pricing: Price
   );
 }
 
-function nearestColor(hex: string) {
+function nearestColor(palette: Filament[], hex: string) {
   const rgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
   const [r, g, b] = rgb(hex);
-  let best: string = colors[0].id;
+  let best: string = palette[0].id;
   let bestDist = Infinity;
-  for (const c of colors) {
+  for (const c of palette.filter((f) => f.available)) {
     const [cr, cg, cb] = rgb(c.hex);
     const d = (r - cr) ** 2 + (g - cg) ** 2 + (b - cb) ** 2;
     if (d < bestDist) [best, bestDist] = [c.id, d];

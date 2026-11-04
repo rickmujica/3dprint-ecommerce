@@ -10,10 +10,19 @@ import { ColorPicker, ContactFields, FormError, MaterialPicker, SizeAndQuantity 
 import { Button } from "@/components/ui/button";
 import { ZoneColorPicker, type ZonePreview } from "@/components/zone-color-picker";
 import { estimatePrice } from "@/lib/delivery";
+import type { Filament } from "@/lib/palette";
 import type { Model } from "@/lib/types";
 
 /** Visor + formulario de pedido. Elegir colores tiñe el modelo en vivo y recalcula precio y fecha. */
-export function ProductConfigurator({ model, children }: { model: Model; children: React.ReactNode }) {
+export function ProductConfigurator({
+  model,
+  palette,
+  children,
+}: {
+  model: Model;
+  palette: Filament[];
+  children: React.ReactNode;
+}) {
   const [state, action, pending] = useActionState<OrderFormState, FormData>(createCatalogOrder, {});
   const [preview, setPreview] = useState<ZonePreview>({ mode: "mono", materialColors: null, tint: null });
   const [size, setSize] = useState(state.fields?.size ?? "100");
@@ -59,6 +68,7 @@ export function ProductConfigurator({ model, children }: { model: Model; childre
           <MaterialPicker defaultValue={state.fields?.material} />
           {hasZones ? (
             <ZoneColorPicker
+              palette={palette}
               zones={model.color_zones}
               locked={model.colors_locked}
               fields={state.fields}
@@ -66,6 +76,7 @@ export function ProductConfigurator({ model, children }: { model: Model; childre
             />
           ) : (
             <ColorPicker
+              palette={palette}
               allowMulti={false}
               defaultColors={state.fields?.color ? state.fields.color.split(",") : []}
               onTint={onTint}

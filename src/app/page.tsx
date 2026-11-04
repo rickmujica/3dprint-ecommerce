@@ -6,13 +6,15 @@ import { ModelViewer } from "@/components/model-viewer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getPublishedModels } from "@/lib/catalog";
-import { colors, materials } from "@/lib/options";
+import { materials } from "@/lib/options";
+import { availableFilaments } from "@/lib/palette";
+import { getPalette } from "@/lib/palette-server";
 
 // ISR: se regenera en segundo plano como mucho una vez por hora.
 export const revalidate = 3600;
 
 export default async function HomePage() {
-  const models = await getPublishedModels();
+  const [models, palette] = await Promise.all([getPublishedModels(), getPalette()]);
   const featured = models.filter((m) => m.featured);
   const hero = featured[0] ?? models[0];
 
@@ -51,7 +53,7 @@ export default async function HomePage() {
               {[
                 [models.length, "modelos"],
                 [materials.length, "materiales"],
-                [colors.length, "colores"],
+                [availableFilaments(palette).length, "colores"],
               ].map(([n, label]) => (
                 <div key={label}>
                   <dt className="sr-only">{label}</dt>

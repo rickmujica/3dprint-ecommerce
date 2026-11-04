@@ -5,14 +5,16 @@ import { ChevronLeft } from "lucide-react";
 import { EditModelForm } from "@/components/admin/edit-model-form";
 import { requireAdmin } from "@/lib/auth";
 import { getCapacity } from "@/lib/capacity";
+import { getPalette } from "@/lib/palette-server";
 import type { Model } from "@/lib/types";
 
 export default async function EditModelPage({ params }: PageProps<"/admin/modelos/[id]">) {
   const { id } = await params;
   const { supabase } = await requireAdmin();
-  const [{ data }, capacity] = await Promise.all([
+  const [{ data }, capacity, palette] = await Promise.all([
     supabase.from("models").select("*").eq("id", id).maybeSingle(),
     getCapacity().catch(() => null),
+    getPalette(),
   ]);
   if (!data) notFound();
   const model = data as Model;
@@ -25,6 +27,7 @@ export default async function EditModelPage({ params }: PageProps<"/admin/modelo
       <h1 className="text-3xl font-bold">Editar: {model.title}</h1>
       <EditModelForm
         model={model}
+        palette={palette}
         pricing={
           capacity && {
             multicolor_price_factor: capacity.multicolor_price_factor,

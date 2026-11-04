@@ -5,7 +5,9 @@ import { redirect } from "next/navigation";
 
 import { requireAdmin } from "@/lib/auth";
 import { capacityInfo, deliveryFor, getCapacity } from "@/lib/capacity";
-import { colors, licenses, orderStatuses, sizes, waitlistStatuses } from "@/lib/options";
+import { licenses, orderStatuses, sizes, waitlistStatuses } from "@/lib/options";
+import { normalizePalette, type Filament } from "@/lib/palette";
+import { getPalette } from "@/lib/palette-server";
 import { orderCode } from "@/lib/order-code";
 import { isSafeKey, publicFileUrl } from "@/lib/r2";
 import type { ColorZone, LicenseId, OrderStatus, WaitlistEntry, WaitlistStatus } from "@/lib/types";
@@ -86,7 +88,7 @@ export async function toggleModelPublished(form: FormData) {
 }
 
 /** Valida las zonas de color que manda el editor del admin (JSON). */
-function parseZones(raw: string): ColorZone[] | string {
+function parseZones(raw: string, palette: Filament[]): ColorZone[] | string {
   let data: unknown;
   try {
     data = JSON.parse(raw || "[]");
@@ -100,7 +102,7 @@ function parseZones(raw: string): ColorZone[] | string {
     const color = typeof z?.color === "string" ? z.color : "";
     const material = typeof z?.material === "string" ? z.material.trim().slice(0, 80) : "";
     if (!name) return "Cada zona necesita un nombre.";
-    if (!colors.some((c) => c.id === color)) return `Elegí un color para la zona "${name}".`;
+    if (!palette.some((c) => c.id === color)) return `Elegí un color para la zona "${name}".`;
     if (zones.some((other) => other.name === name)) return `Hay dos zonas llamadas "${name}".`;
     zones.push(material ? { name, color, material } : { name, color });
   }
@@ -112,7 +114,7 @@ export async function updateModel(_prev: AdminFormState, form: FormData): Promis
   const id = str(form, "id", 40);
   const title = str(form, "title", 120);
   if (!title) return { error: "Falta el título." };
-  const zones = parseZones(str(form, "color_zones", 8000));
+  const zones = parseZones(str(form, "color_zones", 8000), await getPalette());
   if (typeof zones === "string") return { error: zones };
 
   const { data, error } = await supabase
@@ -139,6 +141,35 @@ export async function updateModel(_prev: AdminFormState, form: FormData): Promis
 
   updateTag("models");
   updateTag(`model:${data.slug}`);
+  refresh();
+  return { ok: true };
+}
+
+export async function updateFilaments(_prev: AdminFormState, form: FormData): Promise<AdminFormState & { ok?: boolean }> {
+  const { supabase } = await requireAdmin();
+  let raw: unknown;
+  try {
+    raw = JSON.parse(str(form, "filaments", 20000) || "[]");
+  } catch {
+    return { error: "Lista de filamentos inválida." };
+  }
+  if (!Array.isArray(raw)) return { error: "Lista de filamentos inválida." };
+  // Los filamentos nuevos reciben un id a partir del nombre; los existentes conservan el suyo.
+  const withIds = (raw as Record<string, unknown>[]).map((f) => ({
+    ...f,
+    id: typeof f.id === "string" && f.id ? f.id : slugify(String(f.label ?? "")).slice(0, 40),
+  }));
+  const ids = withIds.map((f) => f.id);
+  const dup = ids.find((id, i) => ids.indexOf(id) !== i);
+  if (dup) return { error: `Hay dos filamentos con el mismo nombre ("${dup}").` };
+  const palette = normalizePalette(withIds);
+  if (!palette || palette.length !== withIds.length)
+    return { error: "Cada filamento necesita un nombre y un color válido." };
+  if (!palette.some((f) => f.available)) return { error: "Tiene que haber al menos un filamento disponible." };
+
+  const { error } = await supabase.from("shop_settings").update({ filaments: palette }).eq("id", true);
+  if (error) return { error: error.message };
+  updateTag("palette");
   refresh();
   return { ok: true };
 }
