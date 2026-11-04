@@ -4,6 +4,9 @@ import { getCategories, getPublishedModels } from "@/lib/catalog";
 import { site } from "@/lib/site";
 import { slugify } from "@/lib/utils";
 
+// ISR: se regenera en segundo plano como mucho una vez por hora.
+export const revalidate = 3600;
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [models, categories] = await Promise.all([getPublishedModels(), getCategories()]);
   const url = (path: string) => new URL(path, site.url).toString();

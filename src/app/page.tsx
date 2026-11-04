@@ -8,6 +8,9 @@ import { Button } from "@/components/ui/button";
 import { getPublishedModels } from "@/lib/catalog";
 import { colors, materials } from "@/lib/options";
 
+// ISR: se regenera en segundo plano como mucho una vez por hora.
+export const revalidate = 3600;
+
 export default async function HomePage() {
   const models = await getPublishedModels();
   const featured = models.filter((m) => m.featured);

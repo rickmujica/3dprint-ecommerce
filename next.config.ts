@@ -2,8 +2,8 @@ import type { NextConfig } from "next";
 import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 
 const nextConfig: NextConfig = {
-  cacheComponents: true,
-  partialPrefetching: true,
+  // Sin cacheComponents: en Cloudflare Workers el render on-demand de Cache Components se cuelga
+  // ("Worker's code had hung"), y el sitio caía cada vez que vencía la caché de una página.
   // Cloudflare cobra la optimización de imágenes; las miniaturas ya se generan livianas al subir.
   images: { unoptimized: true },
   experimental: {

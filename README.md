@@ -82,7 +82,7 @@ src/app/actions/         Server Actions (pedidos, admin)
 src/app/files/[...key]   sirve los archivos públicos de R2 (GLB, miniaturas)
 src/app/api/admin/       subida a R2 y descarga de privados (solo admins)
 src/components/          UI (shadcn en components/ui, visor, configurador, formularios)
-src/lib/catalog.ts       lecturas cacheadas del catálogo ("use cache")
+src/lib/catalog.ts       lecturas cacheadas del catálogo (unstable_cache)
 src/lib/three/           conversión STL/OBJ/3MF → GLB + miniatura (en el navegador)
 supabase/                esquema, políticas RLS y datos de ejemplo
 scripts/                 generadores de los modelos y miniaturas demo
@@ -91,7 +91,7 @@ scripts/                 generadores de los modelos y miniaturas demo
 ## Notas
 
 - **Archivos en R2**: `public/…` se sirve por `/files/…` con caché larga; `private/…` (STL originales y fotos de clientes) solo lo descarga un admin.
-- **Caché**: el catálogo usa `"use cache"` con la etiqueta `models`. Al crear o publicar un modelo desde el admin se invalida solo.
+- **Caché**: el catálogo usa `unstable_cache` (etiqueta `models`) y las páginas públicas son ISR con `revalidate = 3600`: se regeneran en segundo plano como mucho una vez por hora. No usar `cacheComponents` / `"use cache"`: en Cloudflare Workers el render on-demand se cuelga ("Worker's code had hung") y el sitio cae cuando vence la caché.
 - **Modelos de terceros**: no scrapear Thingiverse/Printables/MakerWorld (lo prohíben sus términos). Cargalos a mano con licencia y autor.
 - **Dónde conseguir modelos para vender impresos**: [Printables](https://www.printables.com) y [Thingiverse](https://www.thingiverse.com) permiten filtrar por licencia (buscá CC0, CC BY o CC BY-SA; evitá las "NC"). [Smithsonian Open Access](https://3d.si.edu) y [NASA 3D Resources](https://science.nasa.gov/3d-resources/) tienen escaneos y modelos de dominio público. En MakerWorld y Cults revisá la licencia de cada modelo, varios permiten venta solo con permiso del autor.
 - **Modelos demo**: `npm run demo-models` genera los GLB de `public/demo` por código. Las miniaturas salen de `node scripts/capture-demo-thumbnails.mjs` con el sitio corriendo.
