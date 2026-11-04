@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { MessageCircle } from "lucide-react";
+import { CalendarClock, MessageCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { whatsappLink } from "@/lib/site";
+import { formatDeliveryDate } from "@/lib/delivery";
 import { hasSupabase } from "@/lib/supabase/env";
 
 // Se lee en el navegador: así la página queda 100% estática y no depende de streaming en el Worker.
@@ -13,6 +14,8 @@ export function OrderSummary() {
   const params = useSearchParams();
   const code = params.get("codigo");
   const model = params.get("modelo");
+  const delivery = params.get("entrega");
+  const validDelivery = delivery && /^\d{4}-\d{2}-\d{2}$/.test(delivery) ? delivery : null;
   const wa = code
     ? whatsappLink(`Hola! Hice el pedido ${code}${model ? ` (${model})` : ""} en la web y quería coordinar.`)
     : null;
@@ -22,6 +25,15 @@ export function OrderSummary() {
       <p className="text-lg text-muted-foreground">
         Te vamos a escribir con el precio y el plazo de entrega. No se cobra nada hasta que confirmes.
       </p>
+      {validDelivery && (
+        <p className="mx-auto flex max-w-md items-start gap-3 rounded-xl border-2 border-primary/40 bg-primary/10 p-4 text-left text-sm">
+          <CalendarClock className="mt-0.5 size-5 shrink-0 text-primary" />
+          <span>
+            Debido al volumen de pedidos, la fecha estimada de entrega sería el{" "}
+            <strong>{formatDeliveryDate(validDelivery)}</strong>. Te la confirmamos junto con el precio.
+          </span>
+        </p>
+      )}
       {code && (
         <p className="inline-block rounded-xl border-2 border-foreground px-5 py-3 font-mono text-2xl font-bold shadow-extrude-sm dark:border-extrude">
           {code}

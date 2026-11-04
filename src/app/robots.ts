@@ -4,7 +4,7 @@ import { site } from "@/lib/site";
 
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: { userAgent: "*", allow: "/", disallow: ["/admin", "/pedido/gracias"] },
+    rules: { userAgent: "*", allow: "/", disallow: ["/admin", "/pedido/gracias", "/pedido/en-espera"] },
     sitemap: new URL("/sitemap.xml", site.url).toString(),
   };
 }

@@ -1,9 +1,10 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { ImagePlus, Loader2, Send } from "lucide-react";
+import { BellRing, ImagePlus, Loader2, Send } from "lucide-react";
 
 import { createCustomOrder, type OrderFormState } from "@/app/actions/orders";
+import { CapacityNotice, isWaitlist, useCapacity } from "@/components/order-capacity";
 import { ColorPicker, ContactFields, FormError, MaterialPicker, SizeAndQuantity } from "@/components/order-fields";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -12,6 +13,8 @@ import { Textarea } from "@/components/ui/textarea";
 export function CustomOrderForm() {
   const [state, action, pending] = useActionState<OrderFormState, FormData>(createCustomOrder, {});
   const [preview, setPreview] = useState<string | null>(null);
+  const capacity = useCapacity();
+  const waitlist = isWaitlist(capacity, state.full);
 
   return (
     <form action={action} className="space-y-6 rounded-2xl border-2 border-foreground bg-card p-5 shadow-extrude sm:p-8 dark:border-extrude/60">
@@ -59,13 +62,17 @@ export function CustomOrderForm() {
       </div>
 
       <MaterialPicker defaultValue={state.fields?.material} />
-      <ColorPicker defaultValue={state.fields?.color} />
+      <ColorPicker
+        defaultMode={state.fields?.color_mode}
+        defaultColors={state.fields?.color ? state.fields.color.split(",") : []}
+      />
       <SizeAndQuantity fields={state.fields} />
-      <ContactFields fields={state.fields} />
+      <ContactFields fields={state.fields} emailRequired={waitlist} />
+      <CapacityNotice info={capacity} full={state.full} />
       <FormError message={state.error} />
       <Button type="submit" variant="extrude" size="lg" className="w-full" disabled={pending}>
-        {pending ? <Loader2 className="animate-spin" /> : <Send />}
-        Enviar pedido personalizado
+        {pending ? <Loader2 className="animate-spin" /> : waitlist ? <BellRing /> : <Send />}
+        {waitlist ? "Avisame cuando haya lugar" : "Enviar pedido personalizado"}
       </Button>
     </form>
   );
