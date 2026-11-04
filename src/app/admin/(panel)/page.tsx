@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { requireAdmin } from "@/lib/auth";
 import { colorLabels } from "@/lib/palette";
-import { getPalette } from "@/lib/palette-server";
+import { materialLabel } from "@/lib/material-types";
+import { getMaterialTypes, getPalette } from "@/lib/palette-server";
 import { capacityInfo, formatDeliveryDate, getCapacity } from "@/lib/capacity";
 import { orderStatuses, queuedStatuses } from "@/lib/options";
 import type { Order, OrderStatus } from "@/lib/types";
@@ -33,10 +34,11 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin">) 
       : query.order("created_at", { ascending: false });
   if (filter.id !== "cola" && filter.id !== "todos") query = query.eq("status", filter.id as OrderStatus);
 
-  const [{ data, error }, capacity, palette, { count: waiting }] = await Promise.all([
+  const [{ data, error }, capacity, palette, materialTypes, { count: waiting }] = await Promise.all([
     query,
     getCapacity().catch(() => null),
     getPalette(),
+    getMaterialTypes(),
     supabase.from("waitlist").select("id", { count: "exact", head: true }).eq("status", "pendiente"),
   ]);
   const orders = (data ?? []) as Order[];
@@ -85,7 +87,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin">) 
               </div>
               <p className="font-display text-base font-semibold">{o.model_title ?? "Pedido a medida"}</p>
               <p>
-                {o.quantity} × {o.material}
+                {o.quantity} × {materialLabel(materialTypes, o.material)}
                 {o.color_mode === "multi" ? " · multicolor" : ""}
                 {!o.color_zones?.length && o.color && ` · ${colorLabels(palette, o.color)}`} · tamaño {o.size}
               </p>

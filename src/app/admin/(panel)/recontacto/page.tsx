@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/ui/native-select";
 import { requireAdmin } from "@/lib/auth";
 import { colorLabels } from "@/lib/palette";
-import { getPalette } from "@/lib/palette-server";
+import { materialLabel } from "@/lib/material-types";
+import { getMaterialTypes, getPalette } from "@/lib/palette-server";
 import { capacityInfo, formatDeliveryDate, getCapacity } from "@/lib/capacity";
 import { waitlistStatuses } from "@/lib/options";
 import { site } from "@/lib/site";
@@ -26,7 +27,12 @@ export default async function WaitlistPage({ searchParams }: PageProps<"/admin/r
 
   let query = supabase.from("waitlist").select("*").order("created_at", { ascending: true }).limit(300);
   if (filter.statuses) query = query.in("status", [...filter.statuses]);
-  const [{ data, error }, capacity, palette] = await Promise.all([query, getCapacity().catch(() => null), getPalette()]);
+  const [{ data, error }, capacity, palette, materialTypes] = await Promise.all([
+    query,
+    getCapacity().catch(() => null),
+    getPalette(),
+    getMaterialTypes(),
+  ]);
   const entries = (data ?? []) as WaitlistEntry[];
   const info = capacity ? capacityInfo(capacity) : null;
   const freeSlots = capacity ? Math.max(0, capacity.max_queue - capacity.queue) : 0;
@@ -90,7 +96,7 @@ export default async function WaitlistPage({ searchParams }: PageProps<"/admin/r
                 </div>
                 <p className="font-display text-base font-semibold">{e.model_title ?? "Pedido a medida"}</p>
                 <p>
-                  {e.quantity} × {e.material}
+                  {e.quantity} × {materialLabel(materialTypes, e.material)}
                   {e.color_mode === "multi" ? " · multicolor" : ""}
                   {!e.color_zones?.length && e.color && ` · ${colorLabels(palette, e.color)}`} · tamaño {e.size}
                 </p>

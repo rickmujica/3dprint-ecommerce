@@ -1,12 +1,5 @@
 import type { ColorMode, LicenseId, OrderStatus, WaitlistStatus } from "./types";
 
-export const materials = [
-  { id: "PLA", label: "PLA", hint: "Rígido y económico. Ideal para decoración." },
-  { id: "PETG", label: "PETG", hint: "Más resistente al calor y a golpes." },
-  { id: "TPU", label: "TPU (flexible)", hint: "Goma flexible: fundas, topes, juntas." },
-  { id: "Resina", label: "Resina", hint: "Máximo detalle: miniaturas y joyería." },
-] as const;
-
 export const colorModes: { id: ColorMode; label: string; hint: string }[] = [
   { id: "mono", label: "Un color", hint: "La pieza entera en un solo filamento." },
   { id: "multi", label: "Multicolor", hint: "Hasta 4 colores en la misma pieza." },

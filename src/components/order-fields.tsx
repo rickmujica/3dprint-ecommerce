@@ -4,25 +4,28 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import { colorModes, materials, maxColors, sizes } from "@/lib/options";
-import { availableFilaments, type Filament } from "@/lib/palette";
+import type { MaterialType } from "@/lib/material-types";
+import { colorModes, maxColors, sizes } from "@/lib/options";
+import { availableFilaments, hexOf, labelOf, type Filament } from "@/lib/palette";
 import { cn } from "@/lib/utils";
 
 type Fields = Record<string, string> | undefined;
 
-export function MaterialPicker({ defaultValue = "PLA" }: { defaultValue?: string }) {
+/** Tipos de filamento que se pueden pedir (ya filtrados por disponibilidad y por modelo). */
+export function MaterialPicker({ options, defaultValue }: { options: MaterialType[]; defaultValue?: string }) {
+  const selected = options.some((m) => m.id === defaultValue) ? defaultValue : options[0]?.id;
   return (
     <fieldset className="space-y-2">
       <legend className="text-sm font-medium">Material</legend>
       <div className="grid grid-cols-2 gap-2">
-        {materials.map((m) => (
+        {options.map((m) => (
           <label
             key={m.id}
             className="cursor-pointer rounded-lg border-2 border-input p-3 transition-all hover:border-foreground/40 has-[:checked]:border-primary has-[:checked]:bg-primary/10 has-[:checked]:shadow-extrude-sm has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-ring/30"
           >
-            <input type="radio" name="material" value={m.id} defaultChecked={m.id === defaultValue} className="sr-only" />
+            <input type="radio" name="material" value={m.id} defaultChecked={m.id === selected} className="sr-only" />
             <span className="block font-display text-sm font-semibold">{m.label}</span>
             <span className="block text-xs text-muted-foreground">{m.hint}</span>
           </label>
@@ -35,6 +38,8 @@ export function MaterialPicker({ defaultValue = "PLA" }: { defaultValue?: string
 /**
  * Un color o multicolor. En multicolor se eligen de 2 a `maxColors` colores.
  * `onTint` avisa el color con el que teñir la vista previa (el primero elegido).
+ * La paleta llega filtrada por el tipo de filamento elegido: si el cliente cambia de material y un color
+ * elegido no está en el nuevo, se quita y se avisa.
  */
 export function ColorPicker({
   palette,
@@ -43,8 +48,11 @@ export function ColorPicker({
   onTint,
   onModeChange,
   allowMulti = true,
+  materialLabel,
 }: {
   palette: Filament[];
+  /** Nombre del tipo de filamento elegido, para el aviso de colores que no hay. */
+  materialLabel?: string;
   defaultMode?: string;
   defaultColors?: string[];
   onTint?: (hex: string | null) => void;
@@ -58,12 +66,31 @@ export function ColorPicker({
     onModeChange?.(m);
   };
   const [picked, setPicked] = useState<string[]>(defaultColors);
+  const [dropped, setDropped] = useState<string[]>([]);
   const colors = availableFilaments(palette);
+  const colorKey = colors.map((c) => c.id).join(",");
 
-  function update(next: string[]) {
-    setPicked(next);
-    onTint?.(colors.find((c) => c.id === next[0])?.hex ?? null);
+  // Cambió el material: se quitan los colores elegidos que no hay en el nuevo (y se avisa cuáles).
+  const [prevKey, setPrevKey] = useState(colorKey);
+  if (prevKey !== colorKey) {
+    setPrevKey(colorKey);
+    const gone = picked.filter((id) => !colors.some((c) => c.id === id));
+    if (gone.length) {
+      setPicked(picked.filter((id) => !gone.includes(id)));
+      setDropped(gone);
+    }
   }
+
+  // La vista previa se tiñe con el primer color elegido.
+  const tintHex = picked[0] ? hexOf(palette, picked[0]) : null;
+  useEffect(() => {
+    onTint?.(tintHex);
+  }, [tintHex, onTint]);
+
+  const update = (next: string[]) => {
+    setPicked(next);
+    setDropped([]);
+  };
 
   function toggle(id: string) {
     if (mode === "mono") return update([id]);
@@ -139,6 +166,12 @@ export function ColorPicker({
             );
           })}
         </div>
+        {dropped.length > 0 && (
+          <p role="status" className="text-xs font-medium text-destructive">
+            {dropped.map((id) => labelOf(palette, id)).join(" y ")} no hay en {materialLabel ?? "este material"}: elegí otro
+            color.
+          </p>
+        )}
         {mode === "multi" && (
           <p className="text-xs text-muted-foreground">Contanos en las notas qué parte va de cada color.</p>
         )}

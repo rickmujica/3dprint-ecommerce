@@ -24,3 +24,13 @@ values
   ('torre-ajedrez', 'Torre de ajedrez', 'Torre clásica con almenas, en tamaño grande para exhibir o para un tablero de jardín. Se puede pedir el juego completo.', 'Juegos', '{ajedrez,pieza,torre}', 'own', '/demo/torre-ajedrez.glb', '/demo/torre-ajedrez.webp', 90, 90, 156, 30000, false, true),
   ('organizador-cables', 'Organizador de cables', 'Peine con tres ranuras que sostiene los cables en el borde del escritorio. Se pega con cinta doble faz.', 'Oficina', '{cables,escritorio,organización}', 'own', '/demo/organizador-cables.glb', '/demo/organizador-cables.webp', 115, 20, 32, 10000, false, true)
 on conflict (slug) do nothing;
+
+-- Figura multicolor de ejemplo (4 partes; el GLB se genera con `npm run demo-multicolor`).
+-- Cada zona apunta al material del GLB con el mismo nombre, así la vista previa tiñe solo esa parte.
+-- Requiere la migración 20261105000000_multicolor_pricing.sql.
+insert into public.models
+  (slug, title, description, category, tags, license, glb_url, thumbnail_url, size_x_mm, size_y_mm, size_z_mm, base_price, featured, published, color_zones)
+values
+  ('pinguino-bufanda', 'Pingüino con bufanda', 'Figura multicolor en 4 partes: cuerpo, panza y ojos, pico y patas, y bufanda. Elegí los colores originales o cambiá el de cada parte.', 'Figuras', '{pingüino,multicolor,figura}', 'own', '/demo/pinguino-bufanda.glb', '/demo/pinguino-bufanda.webp', 48, 39, 69, 35000, true, true,
+   '[{"name": "Cuerpo", "color": "negro", "material": "Cuerpo"}, {"name": "Panza y ojos", "color": "blanco", "material": "Panza y ojos"}, {"name": "Pico y patas", "color": "naranja", "material": "Pico y patas"}, {"name": "Bufanda", "color": "rojo", "material": "Bufanda"}]'::jsonb)
+on conflict (slug) do nothing;

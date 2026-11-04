@@ -10,6 +10,7 @@ import { ColorPicker, ContactFields, FormError, MaterialPicker, SizeAndQuantity 
 import { Button } from "@/components/ui/button";
 import { ZoneColorPicker, type ZonePreview } from "@/components/zone-color-picker";
 import { estimatePrice } from "@/lib/delivery";
+import { orderableMaterials, paletteFor, type MaterialType } from "@/lib/material-types";
 import type { Filament } from "@/lib/palette";
 import type { Model } from "@/lib/types";
 
@@ -17,23 +18,31 @@ import type { Model } from "@/lib/types";
 export function ProductConfigurator({
   model,
   palette,
+  materialTypes,
   children,
 }: {
   model: Model;
   palette: Filament[];
+  materialTypes: MaterialType[];
   children: React.ReactNode;
 }) {
   const [state, action, pending] = useActionState<OrderFormState, FormData>(createCatalogOrder, {});
   const [preview, setPreview] = useState<ZonePreview>({ mode: "mono", materialColors: null, tint: null });
   const [size, setSize] = useState(state.fields?.size ?? "100");
   const [quantity, setQuantity] = useState(Number(state.fields?.quantity ?? 1));
+  const materialOptions = orderableMaterials(materialTypes, palette, model);
+  const [material, setMaterial] = useState(state.fields?.material ?? materialOptions[0]?.id);
+  const selectedMaterial = materialOptions.find((m) => m.id === material) ?? materialOptions[0];
+  const materialFactor = selectedMaterial?.price_factor ?? 1;
+  // Los colores que se ofrecen dependen del tipo de filamento elegido.
+  const materialPalette = paletteFor(palette, selectedMaterial);
   const capacity = useCapacity();
   const waitlist = isWaitlist(capacity, state.full);
   const hasZones = model.color_zones.length > 0;
 
   const onTint = useCallback((hex: string | null) => setPreview({ mode: "mono", materialColors: null, tint: hex }), []);
   const price = capacity
-    ? estimatePrice(model, { size, colorMode: preview.mode, quantity }, capacity.pricing)
+    ? estimatePrice(model, { size, colorMode: preview.mode, quantity, materialFactor }, capacity.pricing)
     : undefined;
 
   return (
@@ -57,18 +66,20 @@ export function ProductConfigurator({
         <form
           action={action}
           onChange={(e) => {
-            const form = e.currentTarget;
-            setSize(String(new FormData(form).get("size") ?? "100"));
-            setQuantity(Number(new FormData(form).get("quantity")) || 1);
+            const data = new FormData(e.currentTarget);
+            setSize(String(data.get("size") ?? "100"));
+            setQuantity(Number(data.get("quantity")) || 1);
+            setMaterial(String(data.get("material") ?? ""));
           }}
           className="space-y-6 rounded-2xl border-2 border-foreground/10 p-5 sm:p-6"
         >
           <h2 className="font-display text-xl font-semibold">Configurá tu impresión</h2>
           <input type="hidden" name="model_slug" value={model.slug} />
-          <MaterialPicker defaultValue={state.fields?.material} />
+          <MaterialPicker options={materialOptions} defaultValue={state.fields?.material} />
           {hasZones ? (
             <ZoneColorPicker
-              palette={palette}
+              palette={materialPalette}
+              materialLabel={selectedMaterial?.label}
               zones={model.color_zones}
               locked={model.colors_locked}
               fields={state.fields}
@@ -76,7 +87,8 @@ export function ProductConfigurator({
             />
           ) : (
             <ColorPicker
-              palette={palette}
+              palette={materialPalette}
+              materialLabel={selectedMaterial?.label}
               allowMulti={false}
               defaultColors={state.fields?.color ? state.fields.color.split(",") : []}
               onTint={onTint}

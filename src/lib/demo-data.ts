@@ -10,6 +10,7 @@ const base = {
   multicolor_price: null,
   color_zones: [],
   colors_locked: false,
+  allowed_materials: null,
   published: true,
   created_at: "2026-10-28T00:00:00Z",
 };
@@ -49,10 +50,6 @@ export const demoModels: Model[] = [
     size_y_mm: 108,
     size_z_mm: 86,
     base_price: 45000,
-    color_zones: [
-      { name: "Maceta", color: "naranja" },
-      { name: "Plato de drenaje", color: "negro" },
-    ],
     featured: true,
   },
   {
@@ -275,5 +272,29 @@ export const demoModels: Model[] = [
     size_z_mm: 32,
     base_price: 10000,
     featured: false,
+  },
+  {
+    ...base,
+    id: "demo-16",
+    slug: "pinguino-bufanda",
+    title: "Pingüino con bufanda",
+    description:
+      "Figura multicolor en 4 partes: cuerpo, panza y ojos, pico y patas, y bufanda. Elegí los colores originales o cambiá el de cada parte.",
+    category: "Figuras",
+    tags: ["pingüino", "multicolor", "figura"],
+    license: "own",
+    glb_url: "/demo/pinguino-bufanda.glb",
+    thumbnail_url: "/demo/pinguino-bufanda.webp",
+    size_x_mm: 48,
+    size_y_mm: 39,
+    size_z_mm: 69,
+    base_price: 35000,
+    color_zones: [
+      { name: "Cuerpo", color: "negro", material: "Cuerpo" },
+      { name: "Panza y ojos", color: "blanco", material: "Panza y ojos" },
+      { name: "Pico y patas", color: "naranja", material: "Pico y patas" },
+      { name: "Bufanda", color: "rojo", material: "Bufanda" },
+    ],
+    featured: true,
   },
 ];

@@ -9,17 +9,28 @@ import { ColorPicker, ContactFields, FormError, MaterialPicker, SizeAndQuantity 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { orderableMaterials, paletteFor, type MaterialType } from "@/lib/material-types";
 import type { Filament } from "@/lib/palette";
 
-export function CustomOrderForm({ palette }: { palette: Filament[] }) {
+export function CustomOrderForm({ palette, materialTypes }: { palette: Filament[]; materialTypes: MaterialType[] }) {
   const [state, action, pending] = useActionState<OrderFormState, FormData>(createCustomOrder, {});
   const [preview, setPreview] = useState<string | null>(null);
   const [colorMode, setColorMode] = useState<"mono" | "multi">(state.fields?.color_mode === "multi" ? "multi" : "mono");
   const capacity = useCapacity();
   const waitlist = isWaitlist(capacity, state.full);
+  const materialOptions = orderableMaterials(materialTypes, palette, null);
+  const [material, setMaterial] = useState(state.fields?.material ?? materialOptions[0]?.id);
+  const selectedMaterial = materialOptions.find((m) => m.id === material) ?? materialOptions[0];
+  const materialPalette = paletteFor(palette, selectedMaterial);
 
   return (
-    <form action={action} className="space-y-6 rounded-2xl border-2 border-foreground bg-card p-5 shadow-extrude sm:p-8 dark:border-extrude/60">
+    <form
+      action={action}
+      onChange={(e) => {
+        if (e.target instanceof HTMLInputElement && e.target.name === "material") setMaterial(e.target.value);
+      }}
+      className="space-y-6 rounded-2xl border-2 border-foreground bg-card p-5 shadow-extrude sm:p-8 dark:border-extrude/60"
+    >
       <div className="space-y-2">
         <Label htmlFor="description">¿Qué querés imprimir?</Label>
         <Textarea
@@ -63,9 +74,10 @@ export function CustomOrderForm({ palette }: { palette: Filament[] }) {
         />
       </div>
 
-      <MaterialPicker defaultValue={state.fields?.material} />
+      <MaterialPicker options={materialOptions} defaultValue={state.fields?.material} />
       <ColorPicker
-        palette={palette}
+        palette={materialPalette}
+        materialLabel={selectedMaterial?.label}
         defaultMode={state.fields?.color_mode}
         defaultColors={state.fields?.color ? state.fields.color.split(",") : []}
         onModeChange={setColorMode}
