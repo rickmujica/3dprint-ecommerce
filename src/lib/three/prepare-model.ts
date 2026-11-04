@@ -22,7 +22,15 @@ export const SUPPORTED_EXTENSIONS = ["stl", "obj", "3mf", "glb"] as const;
  * Convierte el archivo original (STL/OBJ/3MF/GLB) en un GLB liviano para el visor web y genera una miniatura.
  * Corre en el navegador del admin: no gasta CPU del Worker.
  */
-export async function prepareModel(file: File, color = "#a855f7"): Promise<PreparedModel> {
+export async function prepareModel(
+  file: File,
+  opts: {
+    color?: string;
+    /** Escala el modelo para que su lado mayor mida esto en mm (para archivos sin unidades confiables, p. ej. Sketchfab). */
+    fitMaxMm?: number;
+  } = {},
+): Promise<PreparedModel> {
+  const color = opts.color ?? "#a855f7";
   const ext = file.name.split(".").pop()?.toLowerCase();
   const buffer = await file.arrayBuffer();
   const material = new THREE.MeshStandardMaterial({ color, roughness: 0.55, metalness: 0 });
@@ -52,8 +60,13 @@ export async function prepareModel(file: File, color = "#a855f7"): Promise<Prepa
   }
 
   // Medidas antes de rotar, en el sistema del archivo (mm).
-  const rawBox = new THREE.Box3().setFromObject(object);
-  const rawSize = rawBox.getSize(new THREE.Vector3());
+  let rawSize = new THREE.Box3().setFromObject(object).getSize(new THREE.Vector3());
+  const maxSide = Math.max(rawSize.x, rawSize.y, rawSize.z);
+  if (opts.fitMaxMm && maxSide > 0) {
+    object.scale.multiplyScalar(opts.fitMaxMm / maxSide);
+    object.updateMatrixWorld(true);
+    rawSize = new THREE.Box3().setFromObject(object).getSize(new THREE.Vector3());
+  }
   const size = zUp
     ? { x: round(rawSize.x), y: round(rawSize.y), z: round(rawSize.z) }
     : { x: round(rawSize.x), y: round(rawSize.z), z: round(rawSize.y) };
