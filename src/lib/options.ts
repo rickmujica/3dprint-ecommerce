@@ -7,17 +7,6 @@ export const materials = [
   { id: "Resina", label: "Resina", hint: "Máximo detalle: miniaturas y joyería." },
 ] as const;
 
-export const colors = [
-  { id: "negro", label: "Negro", hex: "#111111" },
-  { id: "blanco", label: "Blanco", hex: "#f5f5f5" },
-  { id: "violeta", label: "Violeta", hex: "#a855f7" },
-  { id: "cian", label: "Cian", hex: "#06b6d4" },
-  { id: "magenta", label: "Magenta", hex: "#ec4899" },
-  { id: "lima", label: "Lima", hex: "#84cc16" },
-  { id: "naranja", label: "Naranja", hex: "#f97316" },
-  { id: "gris", label: "Gris", hex: "#9ca3af" },
-] as const;
-
 export const colorModes: { id: ColorMode; label: string; hint: string }[] = [
   { id: "mono", label: "Un color", hint: "La pieza entera en un solo filamento." },
   { id: "multi", label: "Multicolor", hint: "Hasta 4 colores en la misma pieza." },
@@ -65,11 +54,3 @@ export const waitlistStatuses: { id: WaitlistStatus; label: string }[] = [
   { id: "convertido", label: "Convertido en pedido" },
   { id: "descartado", label: "Descartado" },
 ];
-
-export function colorLabels(color: string | null) {
-  if (!color) return "";
-  return color
-    .split(",")
-    .map((id) => colors.find((c) => c.id === id)?.label ?? id)
-    .join(" + ");
-}

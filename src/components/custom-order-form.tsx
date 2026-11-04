@@ -9,10 +9,12 @@ import { ColorPicker, ContactFields, FormError, MaterialPicker, SizeAndQuantity 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import type { Filament } from "@/lib/palette";
 
-export function CustomOrderForm() {
+export function CustomOrderForm({ palette }: { palette: Filament[] }) {
   const [state, action, pending] = useActionState<OrderFormState, FormData>(createCustomOrder, {});
   const [preview, setPreview] = useState<string | null>(null);
+  const [colorMode, setColorMode] = useState<"mono" | "multi">(state.fields?.color_mode === "multi" ? "multi" : "mono");
   const capacity = useCapacity();
   const waitlist = isWaitlist(capacity, state.full);
 
@@ -63,12 +65,14 @@ export function CustomOrderForm() {
 
       <MaterialPicker defaultValue={state.fields?.material} />
       <ColorPicker
+        palette={palette}
         defaultMode={state.fields?.color_mode}
         defaultColors={state.fields?.color ? state.fields.color.split(",") : []}
+        onModeChange={setColorMode}
       />
       <SizeAndQuantity fields={state.fields} />
       <ContactFields fields={state.fields} emailRequired={waitlist} />
-      <CapacityNotice info={capacity} full={state.full} />
+      <CapacityNotice info={capacity} full={state.full} mode={colorMode} />
       <FormError message={state.error} />
       <Button type="submit" variant="extrude" size="lg" className="w-full" disabled={pending}>
         {pending ? <Loader2 className="animate-spin" /> : waitlist ? <BellRing /> : <Send />}

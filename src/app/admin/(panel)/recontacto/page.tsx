@@ -6,11 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/ui/native-select";
 import { requireAdmin } from "@/lib/auth";
+import { colorLabels } from "@/lib/palette";
+import { getPalette } from "@/lib/palette-server";
 import { capacityInfo, formatDeliveryDate, getCapacity } from "@/lib/capacity";
-import { colorLabels, waitlistStatuses } from "@/lib/options";
+import { waitlistStatuses } from "@/lib/options";
 import { site } from "@/lib/site";
 import type { WaitlistEntry } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { cn, formatPrice } from "@/lib/utils";
 
 const filters = [
   { id: "abiertas", label: "Abiertas", statuses: ["pendiente", "contactado"] },
@@ -24,7 +26,7 @@ export default async function WaitlistPage({ searchParams }: PageProps<"/admin/r
 
   let query = supabase.from("waitlist").select("*").order("created_at", { ascending: true }).limit(300);
   if (filter.statuses) query = query.in("status", [...filter.statuses]);
-  const [{ data, error }, capacity] = await Promise.all([query, getCapacity().catch(() => null)]);
+  const [{ data, error }, capacity, palette] = await Promise.all([query, getCapacity().catch(() => null), getPalette()]);
   const entries = (data ?? []) as WaitlistEntry[];
   const info = capacity ? capacityInfo(capacity) : null;
   const freeSlots = capacity ? Math.max(0, capacity.max_queue - capacity.queue) : 0;
@@ -74,7 +76,7 @@ export default async function WaitlistPage({ searchParams }: PageProps<"/admin/r
           const mailto = `mailto:${e.email}?subject=${encodeURIComponent(`${site.name}: ya podemos tomar tu pedido`)}&body=${encodeURIComponent(
             `Hola ${e.customer_name}!\n\nTe escribimos porque se liberó un lugar en la cola de impresión y ya podemos tomar tu pedido${
               e.model_title ? ` de "${e.model_title}"` : ""
-            }.${info?.available ? ` La fecha estimada de entrega sería el ${formatDeliveryDate(info.estimatedDelivery)}.` : ""}\n\n¿Lo confirmamos?\n\n${site.name}`,
+            }.${info?.available ? ` La fecha estimada de entrega sería el ${formatDeliveryDate(e.color_mode === "multi" ? info.estimatedDeliveryMulti : info.estimatedDelivery)}.` : ""}\n\n¿Lo confirmamos?\n\n${site.name}`,
           )}`;
           return (
             <li key={e.id} className="grid gap-4 rounded-xl border-2 border-foreground/10 p-4 md:grid-cols-[1fr_auto]">
@@ -90,8 +92,14 @@ export default async function WaitlistPage({ searchParams }: PageProps<"/admin/r
                 <p>
                   {e.quantity} × {e.material}
                   {e.color_mode === "multi" ? " · multicolor" : ""}
-                  {e.color && ` · ${colorLabels(e.color)}`} · tamaño {e.size}
+                  {!e.color_zones?.length && e.color && ` · ${colorLabels(palette, e.color)}`} · tamaño {e.size}
                 </p>
+                {e.color_zones && e.color_zones.length > 0 && (
+                  <p className="text-muted-foreground">
+                    {e.color_zones.map((z) => `${z.name}: ${colorLabels(palette, z.color)}`).join(" · ")}
+                  </p>
+                )}
+                {e.estimated_price != null && <p>Precio estimado: {formatPrice(e.estimated_price)}</p>}
                 <p>
                   {e.customer_name} · <a href={`mailto:${e.email}`} className="underline-offset-4 hover:underline">{e.email}</a>
                   {e.phone && ` · ${e.phone}`}

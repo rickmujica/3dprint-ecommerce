@@ -6,7 +6,8 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 
-import { colorModes, colors, materials, maxColors, sizes } from "@/lib/options";
+import { colorModes, materials, maxColors, sizes } from "@/lib/options";
+import { availableFilaments, type Filament } from "@/lib/palette";
 import { cn } from "@/lib/utils";
 
 type Fields = Record<string, string> | undefined;
@@ -36,16 +37,28 @@ export function MaterialPicker({ defaultValue = "PLA" }: { defaultValue?: string
  * `onTint` avisa el color con el que teñir la vista previa (el primero elegido).
  */
 export function ColorPicker({
+  palette,
   defaultMode = "mono",
   defaultColors = [],
   onTint,
+  onModeChange,
+  allowMulti = true,
 }: {
+  palette: Filament[];
   defaultMode?: string;
   defaultColors?: string[];
   onTint?: (hex: string | null) => void;
+  onModeChange?: (mode: "mono" | "multi") => void;
+  /** false: solo un color (modelos del catálogo sin zonas de color). */
+  allowMulti?: boolean;
 }) {
-  const [mode, setMode] = useState(defaultMode === "multi" ? "multi" : "mono");
+  const [mode, setModeState] = useState<"mono" | "multi">(allowMulti && defaultMode === "multi" ? "multi" : "mono");
+  const setMode = (m: "mono" | "multi") => {
+    setModeState(m);
+    onModeChange?.(m);
+  };
   const [picked, setPicked] = useState<string[]>(defaultColors);
+  const colors = availableFilaments(palette);
 
   function update(next: string[]) {
     setPicked(next);
@@ -62,6 +75,7 @@ export function ColorPicker({
 
   return (
     <div className="space-y-3">
+      {allowMulti && (
       <fieldset className="space-y-2">
         <legend className="text-sm font-medium">Colores</legend>
         <div className="grid grid-cols-2 gap-2">
@@ -87,6 +101,7 @@ export function ColorPicker({
           ))}
         </div>
       </fieldset>
+      )}
       <fieldset className="space-y-2">
         <legend className="text-sm font-medium">
           {mode === "multi" ? `Elegí de 2 a ${maxColors} colores` : "Color"}

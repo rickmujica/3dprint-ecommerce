@@ -15,11 +15,16 @@ type Props = {
   interactive?: boolean;
   /** Color para teñir el modelo (preview del filamento elegido). */
   tint?: string | null;
+  /** Color por material del GLB (preview de un modelo multicolor por zonas). Tiene prioridad sobre `tint`. */
+  materialColors?: Record<string, string> | null;
 };
 
 type ModelViewerElement = HTMLElement & {
   model?: {
-    materials: { pbrMetallicRoughness: { setBaseColorFactor(color: string): void } }[];
+    materials: {
+      name: string;
+      pbrMetallicRoughness: { baseColorFactor: number[]; setBaseColorFactor(color: string | number[]): void };
+    }[];
   };
 };
 
@@ -27,7 +32,16 @@ type ModelViewerElement = HTMLElement & {
  * Visor 3D basado en <model-viewer> de Google. El web component se carga solo en el navegador
  * para no pesar en el HTML inicial (bueno para SEO y Core Web Vitals).
  */
-export function ModelViewer({ src, alt, poster, className, autoRotate = true, interactive = true, tint }: Props) {
+export function ModelViewer({
+  src,
+  alt,
+  poster,
+  className,
+  autoRotate = true,
+  interactive = true,
+  tint,
+  materialColors,
+}: Props) {
   const ref = useRef<ModelViewerElement>(null);
   const [ready, setReady] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -48,11 +62,27 @@ export function ModelViewer({ src, alt, poster, className, autoRotate = true, in
     return () => el.removeEventListener("load", onLoad);
   }, [ready]);
 
+  // Colores originales de cada material, para volver a ellos cuando no hay color elegido.
+  const original = useRef<number[][] | null>(null);
+
   useEffect(() => {
     const el = ref.current;
-    if (!el?.model || !tint) return;
-    el.model.materials.forEach((m) => m.pbrMetallicRoughness.setBaseColorFactor(tint));
-  }, [tint, loaded]);
+    if (!el?.model) return;
+    original.current ??= el.model.materials.map((m) => [...m.pbrMetallicRoughness.baseColorFactor]);
+    if (materialColors) {
+      el.model.materials.forEach((m) => {
+        const hex = materialColors[m.name];
+        if (hex) m.pbrMetallicRoughness.setBaseColorFactor(hex);
+      });
+    } else if (tint) {
+      el.model.materials.forEach((m) => m.pbrMetallicRoughness.setBaseColorFactor(tint));
+    } else {
+      el.model.materials.forEach((m, i) => {
+        const c = original.current?.[i];
+        if (c) m.pbrMetallicRoughness.setBaseColorFactor(c);
+      });
+    }
+  }, [tint, materialColors, loaded]);
 
   return (
     <div className={cn("relative isolate overflow-hidden", className)}>

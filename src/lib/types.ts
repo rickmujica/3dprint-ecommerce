@@ -23,6 +23,12 @@ export type Model = {
   size_z_mm: number | null;
   /** Precio base en la moneda del sitio. null = a cotizar. */
   base_price: number | null;
+  /** Precio multicolor al 100 %. null = precio base × recargo multicolor de los ajustes. */
+  multicolor_price: number | null;
+  /** Zonas de color (pelo, ropa…). Vacío = pieza de un solo color. */
+  color_zones: ColorZone[];
+  /** El cliente no puede cambiar los colores de las zonas. */
+  colors_locked: boolean;
   featured: boolean;
   published: boolean;
   created_at: string;
@@ -48,9 +54,21 @@ export type Order = {
   status: OrderStatus;
   quote_amount: number | null;
   color_mode: ColorMode;
+  /** Color elegido para cada zona del modelo, si tiene zonas. */
+  color_zones: ColorZone[] | null;
   /** Fecha estimada de entrega (YYYY-MM-DD) que se le mostró al cliente. */
   estimated_delivery: string | null;
+  /** Precio estimado que vio el cliente. */
+  estimated_price: number | null;
   created_at: string;
+};
+
+export type ColorZone = {
+  name: string;
+  /** Id de filamento de la paleta (ver lib/palette.ts). */
+  color: string;
+  /** Material del GLB que se tiñe en la vista previa (opcional). */
+  material?: string;
 };
 
 export type ColorMode = "mono" | "multi";
@@ -69,6 +87,8 @@ export type WaitlistEntry = {
   material: string;
   color_mode: ColorMode;
   color: string | null;
+  color_zones: ColorZone[] | null;
+  estimated_price: number | null;
   size: string;
   quantity: number;
   notes: string | null;
@@ -83,4 +103,10 @@ export type ShopSettings = {
   accepting_orders: boolean;
   max_queue: number;
   prints_per_day: number;
+  /** Un pedido multicolor ocupa este número de lugares en la cola. */
+  multicolor_time_factor: number;
+  /** Precio multicolor = base × este factor (si el modelo no tiene precio multicolor propio). */
+  multicolor_price_factor: number;
+  /** Multiplicador de precio por tamaño, por id de tamaño. */
+  size_price_factors: Record<string, number>;
 };

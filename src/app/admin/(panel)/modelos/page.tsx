@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Download } from "lucide-react";
+import { Download, ExternalLink, Pencil } from "lucide-react";
 
 import { toggleModelPublished } from "@/app/actions/admin";
 import { Badge } from "@/components/ui/badge";
@@ -24,12 +24,19 @@ export default async function AdminModelsPage() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={m.thumbnail_url ?? ""} alt="" className="size-14 rounded-lg bg-muted object-contain" />
             <div className="min-w-0 flex-1">
-              <Link href={`/modelos/${m.slug}`} className="font-display font-semibold hover:underline">{m.title}</Link>
+              <Link href={`/admin/modelos/${m.id}`} className="font-display font-semibold hover:underline">{m.title}</Link>
               <p className="text-sm text-muted-foreground">
                 {m.category} · {licenses[m.license].short} · {formatPrice(m.base_price)}
+                {m.color_zones?.length > 0 && ` · ${m.color_zones.length} zonas de color${m.colors_locked ? " (fijas)" : ""}`}
               </p>
             </div>
             {m.featured && <Badge variant="accent">Destacado</Badge>}
+            <Button asChild variant="ghost" size="icon" aria-label="Ver en la tienda">
+              <Link href={`/modelos/${m.slug}`} target="_blank"><ExternalLink /></Link>
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link href={`/admin/modelos/${m.id}`}><Pencil /> Editar</Link>
+            </Button>
             {m.source_file_key && (
               <Button asChild variant="ghost" size="icon" aria-label="Descargar original">
                 <a href={`/api/admin/file?key=${encodeURIComponent(m.source_file_key)}`}><Download /></a>

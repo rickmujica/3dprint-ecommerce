@@ -1,16 +1,27 @@
+import { defaultSettings, type Capacity } from "./delivery";
 import { hasSupabase } from "./supabase/env";
 import { createPublicClient } from "./supabase/public";
-import type { Capacity } from "./delivery";
 
 export * from "./delivery";
 
-const demoCapacity: Capacity = { accepting_orders: true, max_queue: 10, prints_per_day: 1, queue: 0 };
-
-/** Lee ajustes y tamaño de la cola. Sin Supabase (modo demo) siempre hay lugar. */
+/** Lee ajustes y carga de la cola. Sin Supabase (modo demo) siempre hay lugar. */
 export async function getCapacity(): Promise<Capacity> {
-  if (!hasSupabase) return demoCapacity;
+  if (!hasSupabase) return { ...defaultSettings, queue: 0 };
   const { data, error } = await createPublicClient().rpc("order_capacity");
   if (error || !data) throw new Error(error?.message ?? "Sin ajustes de capacidad");
-  const c = data as Capacity;
-  return { ...c, prints_per_day: Number(c.prints_per_day), queue: Number(c.queue) };
+  return normalizeSettings(data as Record<string, unknown>);
+}
+
+/** Supabase devuelve los numeric como string o number según el caso: los pasamos a number. */
+export function normalizeSettings(d: Record<string, unknown>): Capacity {
+  const factors = (d.size_price_factors ?? defaultSettings.size_price_factors) as Record<string, unknown>;
+  return {
+    accepting_orders: Boolean(d.accepting_orders),
+    max_queue: Number(d.max_queue),
+    prints_per_day: Number(d.prints_per_day),
+    queue: Number(d.queue ?? 0),
+    multicolor_time_factor: Number(d.multicolor_time_factor ?? defaultSettings.multicolor_time_factor),
+    multicolor_price_factor: Number(d.multicolor_price_factor ?? defaultSettings.multicolor_price_factor),
+    size_price_factors: Object.fromEntries(Object.entries(factors).map(([k, v]) => [k, Number(v)])),
+  };
 }

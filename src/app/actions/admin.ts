@@ -4,11 +4,13 @@ import { refresh, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { requireAdmin } from "@/lib/auth";
-import { capacityInfo, getCapacity } from "@/lib/capacity";
-import { licenses, orderStatuses, waitlistStatuses } from "@/lib/options";
+import { capacityInfo, deliveryFor, getCapacity } from "@/lib/capacity";
+import { licenses, orderStatuses, sizes, waitlistStatuses } from "@/lib/options";
+import { normalizePalette, type Filament } from "@/lib/palette";
+import { getPalette } from "@/lib/palette-server";
 import { orderCode } from "@/lib/order-code";
 import { isSafeKey, publicFileUrl } from "@/lib/r2";
-import type { LicenseId, OrderStatus, WaitlistEntry, WaitlistStatus } from "@/lib/types";
+import type { ColorZone, LicenseId, OrderStatus, WaitlistEntry, WaitlistStatus } from "@/lib/types";
 import { slugify } from "@/lib/utils";
 
 export type AdminFormState = { error?: string };
@@ -85,6 +87,93 @@ export async function toggleModelPublished(form: FormData) {
   refresh();
 }
 
+/** Valida las zonas de color que manda el editor del admin (JSON). */
+function parseZones(raw: string, palette: Filament[]): ColorZone[] | string {
+  let data: unknown;
+  try {
+    data = JSON.parse(raw || "[]");
+  } catch {
+    return "Zonas de color inválidas.";
+  }
+  if (!Array.isArray(data) || data.length > 16) return "Podés cargar hasta 16 zonas de color.";
+  const zones: ColorZone[] = [];
+  for (const z of data as Record<string, unknown>[]) {
+    const name = typeof z?.name === "string" ? z.name.trim().slice(0, 40) : "";
+    const color = typeof z?.color === "string" ? z.color : "";
+    const material = typeof z?.material === "string" ? z.material.trim().slice(0, 80) : "";
+    if (!name) return "Cada zona necesita un nombre.";
+    if (!palette.some((c) => c.id === color)) return `Elegí un color para la zona "${name}".`;
+    if (zones.some((other) => other.name === name)) return `Hay dos zonas llamadas "${name}".`;
+    zones.push(material ? { name, color, material } : { name, color });
+  }
+  return zones;
+}
+
+export async function updateModel(_prev: AdminFormState, form: FormData): Promise<AdminFormState & { ok?: boolean }> {
+  const { supabase } = await requireAdmin();
+  const id = str(form, "id", 40);
+  const title = str(form, "title", 120);
+  if (!title) return { error: "Falta el título." };
+  const zones = parseZones(str(form, "color_zones", 8000), await getPalette());
+  if (typeof zones === "string") return { error: zones };
+
+  const { data, error } = await supabase
+    .from("models")
+    .update({
+      title,
+      description: str(form, "description", 4000),
+      category: str(form, "category", 60) || "General",
+      tags: str(form, "tags", 300)
+        .split(",")
+        .map((t) => t.trim().toLowerCase())
+        .filter(Boolean),
+      base_price: num(form, "base_price"),
+      multicolor_price: num(form, "multicolor_price"),
+      color_zones: zones,
+      colors_locked: zones.length > 0 && form.get("colors_locked") === "on",
+      featured: form.get("featured") === "on",
+      published: form.get("published") === "on",
+    })
+    .eq("id", id)
+    .select("slug")
+    .single();
+  if (error) return { error: error.message };
+
+  updateTag("models");
+  updateTag(`model:${data.slug}`);
+  refresh();
+  return { ok: true };
+}
+
+export async function updateFilaments(_prev: AdminFormState, form: FormData): Promise<AdminFormState & { ok?: boolean }> {
+  const { supabase } = await requireAdmin();
+  let raw: unknown;
+  try {
+    raw = JSON.parse(str(form, "filaments", 20000) || "[]");
+  } catch {
+    return { error: "Lista de filamentos inválida." };
+  }
+  if (!Array.isArray(raw)) return { error: "Lista de filamentos inválida." };
+  // Los filamentos nuevos reciben un id a partir del nombre; los existentes conservan el suyo.
+  const withIds = (raw as Record<string, unknown>[]).map((f) => ({
+    ...f,
+    id: typeof f.id === "string" && f.id ? f.id : slugify(String(f.label ?? "")).slice(0, 40),
+  }));
+  const ids = withIds.map((f) => f.id);
+  const dup = ids.find((id, i) => ids.indexOf(id) !== i);
+  if (dup) return { error: `Hay dos filamentos con el mismo nombre ("${dup}").` };
+  const palette = normalizePalette(withIds);
+  if (!palette || palette.length !== withIds.length)
+    return { error: "Cada filamento necesita un nombre y un color válido." };
+  if (!palette.some((f) => f.available)) return { error: "Tiene que haber al menos un filamento disponible." };
+
+  const { error } = await supabase.from("shop_settings").update({ filaments: palette }).eq("id", true);
+  if (error) return { error: error.message };
+  updateTag("palette");
+  refresh();
+  return { ok: true };
+}
+
 export async function updateOrder(form: FormData) {
   const { supabase } = await requireAdmin();
   const id = str(form, "id", 40);
@@ -106,9 +195,29 @@ export async function updateSettings(_prev: AdminFormState, form: FormData): Pro
   if (perDay == null || perDay <= 0 || perDay > 100)
     return { error: "Las impresiones por día tienen que ser un número mayor a 0 (podés usar decimales, ej. 0,5)." };
 
+  const priceFactor = num(form, "multicolor_price_factor");
+  const timeFactor = num(form, "multicolor_time_factor");
+  if (priceFactor == null || priceFactor < 1 || priceFactor > 10)
+    return { error: "El recargo multicolor tiene que ser un multiplicador entre 1 y 10 (1,5 = +50 %)." };
+  if (timeFactor == null || timeFactor < 1 || timeFactor > 10)
+    return { error: "El tiempo multicolor tiene que ser un multiplicador entre 1 y 10 (2 = el doble)." };
+  const sizeFactors: Record<string, number> = {};
+  for (const size of sizes.filter((s) => s.id !== "custom")) {
+    const f = num(form, `size_${size.id}`);
+    if (f == null || f <= 0 || f > 50) return { error: `Revisá el multiplicador del tamaño ${size.label}.` };
+    sizeFactors[size.id] = f;
+  }
+
   const { error } = await supabase
     .from("shop_settings")
-    .update({ accepting_orders: form.get("accepting_orders") === "on", max_queue: maxQueue, prints_per_day: perDay })
+    .update({
+      accepting_orders: form.get("accepting_orders") === "on",
+      max_queue: maxQueue,
+      prints_per_day: perDay,
+      multicolor_price_factor: priceFactor,
+      multicolor_time_factor: timeFactor,
+      size_price_factors: sizeFactors,
+    })
     .eq("id", true);
   if (error) return { error: error.message };
   refresh();
@@ -149,11 +258,13 @@ export async function convertWaitlist(form: FormData) {
       material: entry.material,
       color_mode: entry.color_mode,
       color: entry.color,
+      color_zones: entry.color_zones,
       size: entry.size,
       quantity: entry.quantity,
       notes: entry.notes,
       reference_key: entry.reference_key,
-      estimated_delivery: info.estimatedDelivery,
+      estimated_delivery: deliveryFor(info, entry.color_mode),
+      estimated_price: entry.estimated_price,
     })
     .select("id")
     .single();

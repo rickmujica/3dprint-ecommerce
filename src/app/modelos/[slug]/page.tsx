@@ -8,6 +8,7 @@ import { ProductConfigurator } from "@/components/product-configurator";
 import { Badge } from "@/components/ui/badge";
 import { getModelBySlug, getPublishedModels } from "@/lib/catalog";
 import { licenses } from "@/lib/options";
+import { getPalette } from "@/lib/palette-server";
 import { site } from "@/lib/site";
 import type { Model } from "@/lib/types";
 import { formatPrice, slugify } from "@/lib/utils";
@@ -53,7 +54,7 @@ export default function ModelPage({ params }: PageProps<"/modelos/[slug]">) {
 
 async function ModelDetails({ params }: Pick<PageProps<"/modelos/[slug]">, "params">) {
   const { slug } = await params;
-  const model = await getModelBySlug(slug);
+  const [model, palette] = await Promise.all([getModelBySlug(slug), getPalette()]);
   if (!model) notFound();
 
   const license = licenses[model.license];
@@ -70,7 +71,7 @@ async function ModelDetails({ params }: Pick<PageProps<"/modelos/[slug]">, "para
         </Link>
       </nav>
 
-      <ProductConfigurator model={model}>
+      <ProductConfigurator model={model} palette={palette}>
         <div className="space-y-4">
           <div className="flex flex-wrap gap-2">
             <Badge variant="accent">{model.category}</Badge>
