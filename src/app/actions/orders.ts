@@ -4,10 +4,11 @@ import { redirect } from "next/navigation";
 
 import { capacityInfo, deliveryFor, estimatePrice, getCapacity, type CapacityInfo } from "@/lib/capacity";
 import { getModelBySlug } from "@/lib/catalog";
-import { orderableMaterials, paletteFor, type MaterialType } from "@/lib/material-types";
+import { missingColorsText, orderableMaterials, paletteFor, type MaterialType } from "@/lib/material-types";
 import { colorModes, maxColors, sizes } from "@/lib/options";
-import { availableFilaments, type Filament } from "@/lib/palette";
-import { getMaterialTypes, getPalette } from "@/lib/palette-server";
+import { availableFilaments, labelOf, type Filament } from "@/lib/palette";
+// Sin caché: se valida contra los colores y tipos que hay ahora, no contra los de hace una hora.
+import { fetchMaterialTypes, fetchPalette } from "@/lib/palette-server";
 import { orderCode } from "@/lib/order-code";
 import { getModelsBucket } from "@/lib/r2";
 import { hasSupabase } from "@/lib/supabase/env";
@@ -82,7 +83,7 @@ function readFreeColors(form: FormData, allowMulti: boolean, palette: Filament[]
 }
 
 /** Modelo con zonas: colores originales, personalizados por zona o todo de un color. */
-function readZoneColors(form: FormData, model: Model, palette: Filament[]): ColorChoice {
+function readZoneColors(form: FormData, model: Model, palette: Filament[], materialLabel?: string): ColorChoice {
   const isColor = (id: string) => availableFilaments(palette).some((c) => c.id === id);
   const zoneMode = str(form, "zone_mode", 10) || "original";
   const fields: Record<string, string> = { zone_mode: zoneMode, color: str(form, "color", 20) };
@@ -99,11 +100,11 @@ function readZoneColors(form: FormData, model: Model, palette: Filament[]): Colo
   let zones: ColorZone[];
   if (zoneMode === "original") {
     zones = model.color_zones.map(({ name, color }) => ({ name, color }));
-    if (zones.some((z) => !isColor(z.color)))
+    const missing = zones.filter((z) => !isColor(z.color)).map((z) => labelOf(palette, z.color));
+    if (missing.length)
       return fail(
-        model.colors_locked
-          ? "En ese material no tenemos todos los colores de este modelo: elegí otro material."
-          : "En ese material no tenemos todos los colores originales: elegí «Personalizar» u otro material.",
+        `${missingColorsText(materialLabel, missing)}. ` +
+          (model.colors_locked ? "Elegí otro material." : "Elegí otro material o «Personalizar» para cambiar ese color."),
       );
   } else if (zoneMode === "custom") {
     zones = model.color_zones.map((z, i) => ({ name: z.name, color: fields[`zone_${i}`] }));
@@ -183,15 +184,16 @@ export async function createCatalogOrder(_prev: OrderFormState, form: FormData):
 
   const [model, palette, materialTypes] = await Promise.all([
     getModelBySlug(str(form, "model_slug", 120)),
-    getPalette(),
-    getMaterialTypes(),
+    fetchPalette(),
+    fetchMaterialTypes(),
   ]);
   const materialOptions = orderableMaterials(materialTypes, palette, model);
   const common = readCommon(form, materialOptions);
   // Solo valen los colores que hay en el tipo de filamento elegido.
-  const materialPalette = paletteFor(palette, materialOptions.find((m) => m.id === common.fields.material));
+  const material = materialOptions.find((m) => m.id === common.fields.material);
+  const materialPalette = paletteFor(palette, material);
   const colorChoice = model?.color_zones.length
-    ? readZoneColors(form, model, materialPalette)
+    ? readZoneColors(form, model, materialPalette, material?.label)
     : readFreeColors(form, false, materialPalette);
   const fields: Record<string, string> = { ...common.fields, ...colorChoice.fields };
   if (!model) return { error: "Ese modelo ya no está disponible.", fields };
@@ -236,7 +238,7 @@ export async function createCatalogOrder(_prev: OrderFormState, form: FormData):
 export async function createCustomOrder(_prev: OrderFormState, form: FormData): Promise<OrderFormState> {
   if (str(form, "website")) redirect("/pedido/gracias");
 
-  const [palette, materialTypes] = await Promise.all([getPalette(), getMaterialTypes()]);
+  const [palette, materialTypes] = await Promise.all([fetchPalette(), fetchMaterialTypes()]);
   const materialOptions = orderableMaterials(materialTypes, palette, null);
   const common = readCommon(form, materialOptions);
   const materialPalette = paletteFor(palette, materialOptions.find((m) => m.id === common.fields.material));

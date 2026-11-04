@@ -9,7 +9,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { requireAdmin } from "@/lib/auth";
 import { colorLabels } from "@/lib/palette";
 import { materialLabel } from "@/lib/material-types";
-import { getMaterialTypes, getPalette } from "@/lib/palette-server";
+import { fetchMaterialTypes, fetchPalette } from "@/lib/palette-server";
 import { capacityInfo, formatDeliveryDate, getCapacity } from "@/lib/capacity";
 import { orderStatuses, queuedStatuses } from "@/lib/options";
 import type { Order, OrderStatus } from "@/lib/types";
@@ -37,8 +37,8 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin">) 
   const [{ data, error }, capacity, palette, materialTypes, { count: waiting }] = await Promise.all([
     query,
     getCapacity().catch(() => null),
-    getPalette(),
-    getMaterialTypes(),
+    fetchPalette(),
+    fetchMaterialTypes(),
     supabase.from("waitlist").select("id", { count: "exact", head: true }).eq("status", "pendiente"),
   ]);
   const orders = (data ?? []) as Order[];

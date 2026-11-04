@@ -8,7 +8,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { requireAdmin } from "@/lib/auth";
 import { colorLabels } from "@/lib/palette";
 import { materialLabel } from "@/lib/material-types";
-import { getMaterialTypes, getPalette } from "@/lib/palette-server";
+import { fetchMaterialTypes, fetchPalette } from "@/lib/palette-server";
 import { capacityInfo, formatDeliveryDate, getCapacity } from "@/lib/capacity";
 import { waitlistStatuses } from "@/lib/options";
 import { site } from "@/lib/site";
@@ -30,8 +30,8 @@ export default async function WaitlistPage({ searchParams }: PageProps<"/admin/r
   const [{ data, error }, capacity, palette, materialTypes] = await Promise.all([
     query,
     getCapacity().catch(() => null),
-    getPalette(),
-    getMaterialTypes(),
+    fetchPalette(),
+    fetchMaterialTypes(),
   ]);
   const entries = (data ?? []) as WaitlistEntry[];
   const info = capacity ? capacityInfo(capacity) : null;

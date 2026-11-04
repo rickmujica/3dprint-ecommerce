@@ -8,7 +8,7 @@ import { capacityInfo, deliveryFor, getCapacity } from "@/lib/capacity";
 import { licenses, orderStatuses, sizes, waitlistStatuses } from "@/lib/options";
 import { defaultFilaments, normalizePalette, type Filament } from "@/lib/palette";
 import { defaultMaterialTypes, normalizeMaterialTypes } from "@/lib/material-types";
-import { getMaterialTypes, getPalette } from "@/lib/palette-server";
+import { fetchMaterialTypes, fetchPalette } from "@/lib/palette-server";
 import { orderCode } from "@/lib/order-code";
 import { isSafeKey, publicFileUrl } from "@/lib/r2";
 import type { ColorZone, LicenseId, OrderStatus, WaitlistEntry, WaitlistStatus } from "@/lib/types";
@@ -115,7 +115,7 @@ export async function updateModel(_prev: AdminFormState, form: FormData): Promis
   const id = str(form, "id", 40);
   const title = str(form, "title", 120);
   if (!title) return { error: "Falta el título." };
-  const [palette, materialTypes] = await Promise.all([getPalette(), getMaterialTypes()]);
+  const [palette, materialTypes] = await Promise.all([fetchPalette(), fetchMaterialTypes()]);
   const zones = parseZones(str(form, "color_zones", 8000), palette);
   if (typeof zones === "string") return { error: zones };
   const allowed = form.getAll("allowed_materials").filter((v): v is string => typeof v === "string");
@@ -252,8 +252,7 @@ export async function updateMaterialColors(
     // Todos marcados = null: los colores que se agreguen a la paleta después también van a estar en este tipo.
     t.colors = ids.length === paletteIds.length ? null : ids;
   }
-  const empty = types.find((t) => t.available && t.colors?.length === 0);
-  if (empty) return { error: `Marcá al menos un color para ${empty.label}, o desmarcá "Disponible" en ese tipo.` };
+  // Un tipo sin colores marcados se guarda igual: simplemente no se ofrece en los pedidos.
 
   const { error } = await supabase.from("shop_settings").update({ material_types: types }).eq("id", true);
   if (error) return { error: error.message };

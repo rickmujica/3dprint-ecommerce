@@ -60,6 +60,13 @@ export function orderableMaterials(
   });
 }
 
+/** "Por ahora no tenemos Resina en Negro ni en Naranja" (sin punto final). */
+export function missingColorsText(materialLabel: string | undefined, colorLabels: string[]) {
+  const unique = [...new Set(colorLabels)];
+  const list = unique.length > 1 ? `${unique.slice(0, -1).join(", ")} ni en ${unique.at(-1)}` : (unique[0] ?? "");
+  return `Por ahora no tenemos ${materialLabel ?? "ese material"} en ${list}`;
+}
+
 /** Valida y limpia la lista (de la base o del formulario del admin). */
 export function normalizeMaterialTypes(raw: unknown): MaterialType[] | null {
   if (!Array.isArray(raw)) return null;

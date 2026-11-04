@@ -6,16 +6,27 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { useEffect, useState } from "react";
 
-import type { MaterialType } from "@/lib/material-types";
+import { missingColorsText, type MaterialType } from "@/lib/material-types";
 import { colorModes, maxColors, sizes } from "@/lib/options";
 import { availableFilaments, hexOf, labelOf, type Filament } from "@/lib/palette";
 import { cn } from "@/lib/utils";
 
 type Fields = Record<string, string> | undefined;
 
-/** Tipos de filamento que se pueden pedir (ya filtrados por disponibilidad y por modelo). */
-export function MaterialPicker({ options, defaultValue }: { options: MaterialType[]; defaultValue?: string }) {
-  const selected = options.some((m) => m.id === defaultValue) ? defaultValue : options[0]?.id;
+/**
+ * Tipos de filamento que se pueden pedir (ya filtrados por disponibilidad, colores y modelo).
+ * Controlado: si el tipo elegido deja de ofrecerse (p. ej. al llegar los datos actuales), queda marcado el primero.
+ */
+export function MaterialPicker({
+  options,
+  value,
+  onChange,
+}: {
+  options: MaterialType[];
+  value: string | undefined;
+  onChange: (id: string) => void;
+}) {
+  const selected = options.some((m) => m.id === value) ? value : options[0]?.id;
   return (
     <fieldset className="space-y-2">
       <legend className="text-sm font-medium">Material</legend>
@@ -25,7 +36,14 @@ export function MaterialPicker({ options, defaultValue }: { options: MaterialTyp
             key={m.id}
             className="cursor-pointer rounded-lg border-2 border-input p-3 transition-all hover:border-foreground/40 has-[:checked]:border-primary has-[:checked]:bg-primary/10 has-[:checked]:shadow-extrude-sm has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-ring/30"
           >
-            <input type="radio" name="material" value={m.id} defaultChecked={m.id === selected} className="sr-only" />
+            <input
+              type="radio"
+              name="material"
+              value={m.id}
+              checked={m.id === selected}
+              onChange={() => onChange(m.id)}
+              className="sr-only"
+            />
             <span className="block font-display text-sm font-semibold">{m.label}</span>
             <span className="block text-xs text-muted-foreground">{m.hint}</span>
           </label>
@@ -168,8 +186,11 @@ export function ColorPicker({
         </div>
         {dropped.length > 0 && (
           <p role="status" className="text-xs font-medium text-destructive">
-            {dropped.map((id) => labelOf(palette, id)).join(" y ")} no hay en {materialLabel ?? "este material"}: elegí otro
-            color.
+            {missingColorsText(
+              materialLabel,
+              dropped.map((id) => labelOf(palette, id)),
+            )}
+            : elegí otro color.
           </p>
         )}
         {mode === "multi" && (

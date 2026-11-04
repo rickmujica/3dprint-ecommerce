@@ -5,7 +5,7 @@ import { ChevronLeft } from "lucide-react";
 import { EditModelForm } from "@/components/admin/edit-model-form";
 import { requireAdmin } from "@/lib/auth";
 import { getCapacity } from "@/lib/capacity";
-import { getMaterialTypes, getPalette } from "@/lib/palette-server";
+import { fetchMaterialTypes, fetchPalette } from "@/lib/palette-server";
 import type { Model } from "@/lib/types";
 
 export default async function EditModelPage({ params }: PageProps<"/admin/modelos/[id]">) {
@@ -14,8 +14,8 @@ export default async function EditModelPage({ params }: PageProps<"/admin/modelo
   const [{ data }, capacity, palette, materialTypes] = await Promise.all([
     supabase.from("models").select("*").eq("id", id).maybeSingle(),
     getCapacity().catch(() => null),
-    getPalette(),
-    getMaterialTypes(),
+    fetchPalette(),
+    fetchMaterialTypes(),
   ]);
   if (!data) notFound();
   const model = data as Model;
