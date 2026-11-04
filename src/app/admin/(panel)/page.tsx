@@ -10,6 +10,7 @@ import { requireAdmin } from "@/lib/auth";
 import { capacityInfo, formatDeliveryDate, getCapacity } from "@/lib/capacity";
 import { colorLabels, orderStatuses, queuedStatuses } from "@/lib/options";
 import type { Order, OrderStatus } from "@/lib/types";
+import { formatPrice } from "@/lib/utils";
 
 const filters = [
   { id: "cola", label: "En cola" },
@@ -83,8 +84,14 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin">) 
               <p>
                 {o.quantity} × {o.material}
                 {o.color_mode === "multi" ? " · multicolor" : ""}
-                {o.color && ` · ${colorLabels(o.color)}`} · tamaño {o.size}
+                {!o.color_zones?.length && o.color && ` · ${colorLabels(o.color)}`} · tamaño {o.size}
               </p>
+              {o.color_zones && o.color_zones.length > 0 && (
+                <p className="text-muted-foreground">
+                  {o.color_zones.map((z) => `${z.name}: ${colorLabels(z.color)}`).join(" · ")}
+                </p>
+              )}
+              {o.estimated_price != null && <p>Precio estimado: {formatPrice(o.estimated_price)}</p>}
               {o.estimated_delivery && (
                 <p className="flex items-center gap-1.5">
                   <CalendarClock className="size-4 text-primary" /> Entrega estimada: {formatDeliveryDate(o.estimated_delivery)}
@@ -111,7 +118,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin">) 
                   <option key={s.id} value={s.id}>{s.label}</option>
                 ))}
               </NativeSelect>
-              <Input name="quote_amount" inputMode="numeric" placeholder="Cotización" defaultValue={o.quote_amount ?? ""} aria-label="Cotización" />
+              <Input name="quote_amount" inputMode="numeric" placeholder={o.estimated_price != null ? `Cotización (est. ${o.estimated_price})` : "Cotización"} defaultValue={o.quote_amount ?? ""} aria-label="Cotización" />
               <Button type="submit" size="sm">Guardar</Button>
             </form>
           </li>

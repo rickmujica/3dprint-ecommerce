@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { whatsappLink } from "@/lib/site";
 import { formatDeliveryDate } from "@/lib/delivery";
 import { hasSupabase } from "@/lib/supabase/env";
+import { formatPrice } from "@/lib/utils";
 
 // Se lee en el navegador: así la página queda 100% estática y no depende de streaming en el Worker.
 export function OrderSummary() {
@@ -15,6 +16,8 @@ export function OrderSummary() {
   const code = params.get("codigo");
   const model = params.get("modelo");
   const delivery = params.get("entrega");
+  const price = Number(params.get("precio"));
+  const validPrice = Number.isFinite(price) && price > 0 ? price : null;
   const validDelivery = delivery && /^\d{4}-\d{2}-\d{2}$/.test(delivery) ? delivery : null;
   const wa = code
     ? whatsappLink(`Hola! Hice el pedido ${code}${model ? ` (${model})` : ""} en la web y quería coordinar.`)
@@ -30,7 +33,13 @@ export function OrderSummary() {
           <CalendarClock className="mt-0.5 size-5 shrink-0 text-primary" />
           <span>
             Debido al volumen de pedidos, la fecha estimada de entrega sería el{" "}
-            <strong>{formatDeliveryDate(validDelivery)}</strong>. Te la confirmamos junto con el precio.
+            <strong>{formatDeliveryDate(validDelivery)}</strong>.
+            {validPrice != null && (
+              <>
+                {" "}Precio estimado: <strong>{formatPrice(validPrice)}</strong>.
+              </>
+            )}{" "}
+            Te confirmamos precio y fecha antes de imprimir.
           </span>
         </p>
       )}

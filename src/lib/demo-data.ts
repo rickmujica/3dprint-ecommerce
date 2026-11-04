@@ -7,6 +7,9 @@ const base = {
   author_url: null,
   source_url: null,
   source_file_key: null,
+  multicolor_price: null,
+  color_zones: [],
+  colors_locked: false,
   published: true,
   created_at: "2026-10-28T00:00:00Z",
 };
@@ -46,6 +49,10 @@ export const demoModels: Model[] = [
     size_y_mm: 108,
     size_z_mm: 86,
     base_price: 45000,
+    color_zones: [
+      { name: "Maceta", color: "naranja" },
+      { name: "Plato de drenaje", color: "negro" },
+    ],
     featured: true,
   },
   {

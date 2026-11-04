@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useCallback, useState } from "react";
 import { BellRing, Loader2, Send } from "lucide-react";
 
 import { createCatalogOrder, type OrderFormState } from "@/app/actions/orders";
@@ -8,14 +8,24 @@ import { ModelViewer } from "@/components/model-viewer";
 import { CapacityNotice, isWaitlist, useCapacity } from "@/components/order-capacity";
 import { ColorPicker, ContactFields, FormError, MaterialPicker, SizeAndQuantity } from "@/components/order-fields";
 import { Button } from "@/components/ui/button";
+import { ZoneColorPicker, type ZonePreview } from "@/components/zone-color-picker";
+import { estimatePrice } from "@/lib/delivery";
 import type { Model } from "@/lib/types";
 
-/** Visor + formulario de pedido. Elegir un color tiñe el modelo en vivo. */
+/** Visor + formulario de pedido. Elegir colores tiñe el modelo en vivo y recalcula precio y fecha. */
 export function ProductConfigurator({ model, children }: { model: Model; children: React.ReactNode }) {
   const [state, action, pending] = useActionState<OrderFormState, FormData>(createCatalogOrder, {});
-  const [tint, setTint] = useState<string | null>(null);
+  const [preview, setPreview] = useState<ZonePreview>({ mode: "mono", materialColors: null, tint: null });
+  const [size, setSize] = useState(state.fields?.size ?? "100");
+  const [quantity, setQuantity] = useState(Number(state.fields?.quantity ?? 1));
   const capacity = useCapacity();
   const waitlist = isWaitlist(capacity, state.full);
+  const hasZones = model.color_zones.length > 0;
+
+  const onTint = useCallback((hex: string | null) => setPreview({ mode: "mono", materialColors: null, tint: hex }), []);
+  const price = capacity
+    ? estimatePrice(model, { size, colorMode: preview.mode, quantity }, capacity.pricing)
+    : undefined;
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1.15fr_1fr] lg:gap-12">
@@ -25,7 +35,8 @@ export function ProductConfigurator({ model, children }: { model: Model; childre
             src={model.glb_url}
             alt={`Modelo 3D de ${model.title}`}
             poster={model.thumbnail_url}
-            tint={tint}
+            tint={preview.tint}
+            materialColors={preview.materialColors}
             className="aspect-square w-full"
           />
         </div>
@@ -34,18 +45,35 @@ export function ProductConfigurator({ model, children }: { model: Model; childre
       <div className="space-y-8">
         {children}
 
-        <form action={action} className="space-y-6 rounded-2xl border-2 border-foreground/10 p-5 sm:p-6">
+        <form
+          action={action}
+          onChange={(e) => {
+            const form = e.currentTarget;
+            setSize(String(new FormData(form).get("size") ?? "100"));
+            setQuantity(Number(new FormData(form).get("quantity")) || 1);
+          }}
+          className="space-y-6 rounded-2xl border-2 border-foreground/10 p-5 sm:p-6"
+        >
           <h2 className="font-display text-xl font-semibold">Configurá tu impresión</h2>
           <input type="hidden" name="model_slug" value={model.slug} />
           <MaterialPicker defaultValue={state.fields?.material} />
-          <ColorPicker
-            defaultMode={state.fields?.color_mode}
-            defaultColors={state.fields?.color ? state.fields.color.split(",") : []}
-            onTint={setTint}
-          />
+          {hasZones ? (
+            <ZoneColorPicker
+              zones={model.color_zones}
+              locked={model.colors_locked}
+              fields={state.fields}
+              onPreview={setPreview}
+            />
+          ) : (
+            <ColorPicker
+              allowMulti={false}
+              defaultColors={state.fields?.color ? state.fields.color.split(",") : []}
+              onTint={onTint}
+            />
+          )}
           <SizeAndQuantity fields={state.fields} />
           <ContactFields fields={state.fields} emailRequired={waitlist} />
-          <CapacityNotice info={capacity} full={state.full} />
+          <CapacityNotice info={capacity} full={state.full} mode={preview.mode} price={price} />
           <FormError message={state.error} />
           <Button type="submit" variant="extrude" size="lg" className="w-full" disabled={pending}>
             {pending ? <Loader2 className="animate-spin" /> : waitlist ? <BellRing /> : <Send />}

@@ -39,12 +39,21 @@ export function ColorPicker({
   defaultMode = "mono",
   defaultColors = [],
   onTint,
+  onModeChange,
+  allowMulti = true,
 }: {
   defaultMode?: string;
   defaultColors?: string[];
   onTint?: (hex: string | null) => void;
+  onModeChange?: (mode: "mono" | "multi") => void;
+  /** false: solo un color (modelos del catálogo sin zonas de color). */
+  allowMulti?: boolean;
 }) {
-  const [mode, setMode] = useState(defaultMode === "multi" ? "multi" : "mono");
+  const [mode, setModeState] = useState<"mono" | "multi">(allowMulti && defaultMode === "multi" ? "multi" : "mono");
+  const setMode = (m: "mono" | "multi") => {
+    setModeState(m);
+    onModeChange?.(m);
+  };
   const [picked, setPicked] = useState<string[]>(defaultColors);
 
   function update(next: string[]) {
@@ -62,6 +71,7 @@ export function ColorPicker({
 
   return (
     <div className="space-y-3">
+      {allowMulti && (
       <fieldset className="space-y-2">
         <legend className="text-sm font-medium">Colores</legend>
         <div className="grid grid-cols-2 gap-2">
@@ -87,6 +97,7 @@ export function ColorPicker({
           ))}
         </div>
       </fieldset>
+      )}
       <fieldset className="space-y-2">
         <legend className="text-sm font-medium">
           {mode === "multi" ? `Elegí de 2 a ${maxColors} colores` : "Color"}

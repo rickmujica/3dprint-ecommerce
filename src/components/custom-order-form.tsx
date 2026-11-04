@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 export function CustomOrderForm() {
   const [state, action, pending] = useActionState<OrderFormState, FormData>(createCustomOrder, {});
   const [preview, setPreview] = useState<string | null>(null);
+  const [colorMode, setColorMode] = useState<"mono" | "multi">(state.fields?.color_mode === "multi" ? "multi" : "mono");
   const capacity = useCapacity();
   const waitlist = isWaitlist(capacity, state.full);
 
@@ -65,10 +66,11 @@ export function CustomOrderForm() {
       <ColorPicker
         defaultMode={state.fields?.color_mode}
         defaultColors={state.fields?.color ? state.fields.color.split(",") : []}
+        onModeChange={setColorMode}
       />
       <SizeAndQuantity fields={state.fields} />
       <ContactFields fields={state.fields} emailRequired={waitlist} />
-      <CapacityNotice info={capacity} full={state.full} />
+      <CapacityNotice info={capacity} full={state.full} mode={colorMode} />
       <FormError message={state.error} />
       <Button type="submit" variant="extrude" size="lg" className="w-full" disabled={pending}>
         {pending ? <Loader2 className="animate-spin" /> : waitlist ? <BellRing /> : <Send />}

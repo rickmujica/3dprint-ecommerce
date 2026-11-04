@@ -16,7 +16,19 @@ export const colors = [
   { id: "lima", label: "Lima", hex: "#84cc16" },
   { id: "naranja", label: "Naranja", hex: "#f97316" },
   { id: "gris", label: "Gris", hex: "#9ca3af" },
+  { id: "rojo", label: "Rojo", hex: "#dc2626" },
+  { id: "azul", label: "Azul", hex: "#2563eb" },
+  { id: "amarillo", label: "Amarillo", hex: "#facc15" },
+  { id: "verde", label: "Verde", hex: "#16a34a" },
+  { id: "piel", label: "Piel", hex: "#f2c9a0" },
+  { id: "marron", label: "Marrón", hex: "#7c4a21" },
+  { id: "dorado", label: "Dorado", hex: "#c9a227" },
+  { id: "plata", label: "Plata", hex: "#c0c0c8" },
 ] as const;
+
+export function colorHex(id: string) {
+  return colors.find((c) => c.id === id)?.hex ?? null;
+}
 
 export const colorModes: { id: ColorMode; label: string; hint: string }[] = [
   { id: "mono", label: "Un color", hint: "La pieza entera en un solo filamento." },
