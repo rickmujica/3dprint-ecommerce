@@ -7,10 +7,18 @@ import { defaultFilaments, normalizePalette } from "@/lib/palette";
 
 export default async function FilamentsPage() {
   const { supabase } = await requireAdmin();
-  const [palette, types] = await Promise.all([
-    supabase.from("shop_settings").select("filaments").eq("id", true).maybeSingle(),
-    supabase.from("shop_settings").select("material_types").eq("id", true).maybeSingle(),
-  ]);
+  // Una sola consulta; si falta alguna columna (migración sin correr) se reintenta por separado para saber cuál.
+  let palette, types;
+  const both = await supabase.from("shop_settings").select("filaments, material_types").eq("id", true).maybeSingle();
+  if (!both.error) {
+    palette = { data: both.data, error: null };
+    types = { data: both.data, error: null };
+  } else {
+    [palette, types] = await Promise.all([
+      supabase.from("shop_settings").select("filaments").eq("id", true).maybeSingle(),
+      supabase.from("shop_settings").select("material_types").eq("id", true).maybeSingle(),
+    ]);
+  }
 
   const typeList = normalizeMaterialTypes(types.data?.material_types) ?? defaultMaterialTypes;
   const colorList = normalizePalette(palette.data?.filaments) ?? defaultFilaments;

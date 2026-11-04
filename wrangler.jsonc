@@ -29,5 +29,8 @@
       "bucket_name": "3dprint-ecommerce-opennext-cache"
     }
   ],
+  // Smart Placement: Cloudflare corre el Worker cerca de Supabase (us-east-1) si eso reduce la latencia.
+  // El admin hace varias consultas seguidas por vista; sin esto cada una cruza el continente.
+  "placement": { "mode": "smart" },
   "observability": { "enabled": true }
 }
