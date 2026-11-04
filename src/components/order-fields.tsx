@@ -4,7 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
-import { colors, materials, sizes } from "@/lib/options";
+import { useState } from "react";
+
+import { colorModes, colors, materials, maxColors, sizes } from "@/lib/options";
 import { cn } from "@/lib/utils";
 
 type Fields = Record<string, string> | undefined;
@@ -29,44 +31,104 @@ export function MaterialPicker({ defaultValue = "PLA" }: { defaultValue?: string
   );
 }
 
+/**
+ * Un color o multicolor. En multicolor se eligen de 2 a `maxColors` colores.
+ * `onTint` avisa el color con el que teñir la vista previa (el primero elegido).
+ */
 export function ColorPicker({
-  value,
-  onChange,
-  defaultValue,
+  defaultMode = "mono",
+  defaultColors = [],
+  onTint,
 }: {
-  value?: string;
-  onChange?: (id: string, hex: string) => void;
-  defaultValue?: string;
+  defaultMode?: string;
+  defaultColors?: string[];
+  onTint?: (hex: string | null) => void;
 }) {
+  const [mode, setMode] = useState(defaultMode === "multi" ? "multi" : "mono");
+  const [picked, setPicked] = useState<string[]>(defaultColors);
+
+  function update(next: string[]) {
+    setPicked(next);
+    onTint?.(colors.find((c) => c.id === next[0])?.hex ?? null);
+  }
+
+  function toggle(id: string) {
+    if (mode === "mono") return update([id]);
+    if (picked.includes(id)) return update(picked.filter((p) => p !== id));
+    if (picked.length < maxColors) update([...picked, id]);
+  }
+
+  const labels = picked.map((id) => colors.find((c) => c.id === id)?.label).filter(Boolean);
+
   return (
-    <fieldset className="space-y-2">
-      <legend className="text-sm font-medium">
-        Color{value ? <span className="text-muted-foreground"> · {colors.find((c) => c.id === value)?.label}</span> : null}
-      </legend>
-      <div className="flex flex-wrap gap-2">
-        {colors.map((c) => (
-          <label key={c.id} className="cursor-pointer" title={c.label}>
-            <input
-              type="radio"
-              name="color"
-              value={c.id}
-              className="peer sr-only"
-              {...(onChange
-                ? { checked: value === c.id, onChange: () => onChange(c.id, c.hex) }
-                : { defaultChecked: defaultValue === c.id })}
-            />
-            <span
-              className={cn(
-                "block size-9 rounded-full border-2 border-foreground/20 transition-all",
-                "peer-checked:scale-110 peer-checked:border-foreground peer-checked:shadow-extrude-sm peer-focus-visible:ring-[3px] peer-focus-visible:ring-ring/40",
-              )}
-              style={{ backgroundColor: c.hex }}
-            />
-            <span className="sr-only">{c.label}</span>
-          </label>
-        ))}
-      </div>
-    </fieldset>
+    <div className="space-y-3">
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-medium">Colores</legend>
+        <div className="grid grid-cols-2 gap-2">
+          {colorModes.map((m) => (
+            <label
+              key={m.id}
+              className="cursor-pointer rounded-lg border-2 border-input p-3 transition-all hover:border-foreground/40 has-[:checked]:border-primary has-[:checked]:bg-primary/10 has-[:checked]:shadow-extrude-sm has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-ring/30"
+            >
+              <input
+                type="radio"
+                name="color_mode"
+                value={m.id}
+                checked={mode === m.id}
+                onChange={() => {
+                  setMode(m.id);
+                  if (m.id === "mono") update(picked.slice(0, 1));
+                }}
+                className="sr-only"
+              />
+              <span className="block font-display text-sm font-semibold">{m.label}</span>
+              <span className="block text-xs text-muted-foreground">{m.hint}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-medium">
+          {mode === "multi" ? `Elegí de 2 a ${maxColors} colores` : "Color"}
+          {labels.length > 0 && <span className="text-muted-foreground"> · {labels.join(" + ")}</span>}
+        </legend>
+        <div className="flex flex-wrap gap-2">
+          {colors.map((c) => {
+            const checked = picked.includes(c.id);
+            const order = picked.indexOf(c.id);
+            return (
+              <label key={c.id} className="relative cursor-pointer" title={c.label}>
+                <input
+                  type={mode === "multi" ? "checkbox" : "radio"}
+                  name="color"
+                  value={c.id}
+                  checked={checked}
+                  onChange={() => toggle(c.id)}
+                  disabled={mode === "multi" && !checked && picked.length >= maxColors}
+                  className="peer sr-only"
+                />
+                <span
+                  className={cn(
+                    "block size-9 rounded-full border-2 border-foreground/20 transition-all",
+                    "peer-checked:scale-110 peer-checked:border-foreground peer-checked:shadow-extrude-sm peer-focus-visible:ring-[3px] peer-focus-visible:ring-ring/40 peer-disabled:opacity-40",
+                  )}
+                  style={{ backgroundColor: c.hex }}
+                />
+                {mode === "multi" && checked && (
+                  <span className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-foreground text-[10px] font-bold text-background">
+                    {order + 1}
+                  </span>
+                )}
+                <span className="sr-only">{c.label}</span>
+              </label>
+            );
+          })}
+        </div>
+        {mode === "multi" && (
+          <p className="text-xs text-muted-foreground">Contanos en las notas qué parte va de cada color.</p>
+        )}
+      </fieldset>
+    </div>
   );
 }
 
@@ -91,7 +153,7 @@ export function SizeAndQuantity({ fields }: { fields: Fields }) {
   );
 }
 
-export function ContactFields({ fields }: { fields: Fields }) {
+export function ContactFields({ fields, emailRequired = false }: { fields: Fields; emailRequired?: boolean }) {
   return (
     <div className="space-y-3">
       <div className="space-y-2">
@@ -104,8 +166,8 @@ export function ContactFields({ fields }: { fields: Fields }) {
           <Input id="phone" name="phone" type="tel" autoComplete="tel" defaultValue={fields?.phone} />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input id="email" name="email" type="email" autoComplete="email" defaultValue={fields?.email} />
+          <Label htmlFor="email">Email{emailRequired && <span className="text-muted-foreground"> (para avisarte)</span>}</Label>
+          <Input id="email" name="email" type="email" autoComplete="email" required={emailRequired} defaultValue={fields?.email} />
         </div>
       </div>
       <div className="space-y-2">
