@@ -25,6 +25,7 @@ async function Gate({ children }: { children: React.ReactNode }) {
         <Button asChild variant="ghost" size="sm"><Link href="/admin">Pedidos</Link></Button>
         <Button asChild variant="ghost" size="sm"><Link href="/admin/recontacto">Recontacto</Link></Button>
         <Button asChild variant="ghost" size="sm"><Link href="/admin/modelos">Modelos</Link></Button>
+        <Button asChild variant="ghost" size="sm"><Link href="/admin/importar">Importar</Link></Button>
         <Button asChild variant="ghost" size="sm"><Link href="/admin/ajustes">Ajustes</Link></Button>
         <Button asChild variant="extrude" size="sm"><Link href="/admin/modelos/nuevo">Nuevo modelo</Link></Button>
         <form action={signOut} className="ml-auto flex items-center gap-3 text-sm text-muted-foreground">

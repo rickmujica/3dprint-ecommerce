@@ -126,7 +126,7 @@ async function ModelDetails({ params }: Pick<PageProps<"/modelos/[slug]">, "para
                 <>
                   {" · "}
                   <a href={model.source_url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">
-                    original
+                    original en {sourceHost(model.source_url)}
                   </a>
                 </>
               )}
@@ -137,6 +137,14 @@ async function ModelDetails({ params }: Pick<PageProps<"/modelos/[slug]">, "para
       </ProductConfigurator>
     </>
   );
+}
+
+function sourceHost(url: string) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "la fuente";
+  }
 }
 
 function ProductJsonLd({ model }: { model: Model }) {
