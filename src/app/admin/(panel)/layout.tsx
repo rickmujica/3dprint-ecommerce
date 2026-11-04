@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { Suspense } from "react";
 import { LogOut } from "lucide-react";
 
 import { signOut } from "@/app/actions/admin";
+import { AdminNav } from "@/components/admin/admin-nav";
 import { Button } from "@/components/ui/button";
 import { requireAdmin } from "@/lib/auth";
 
@@ -22,13 +22,7 @@ async function Gate({ children }: { children: React.ReactNode }) {
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-center gap-2 border-b-2 border-foreground/10 pb-4">
-        <Button asChild variant="ghost" size="sm"><Link href="/admin">Pedidos</Link></Button>
-        <Button asChild variant="ghost" size="sm"><Link href="/admin/recontacto">Recontacto</Link></Button>
-        <Button asChild variant="ghost" size="sm"><Link href="/admin/modelos">Modelos</Link></Button>
-        <Button asChild variant="ghost" size="sm"><Link href="/admin/importar">Importar</Link></Button>
-        <Button asChild variant="ghost" size="sm"><Link href="/admin/filamentos">Filamentos</Link></Button>
-        <Button asChild variant="ghost" size="sm"><Link href="/admin/ajustes">Ajustes</Link></Button>
-        <Button asChild variant="extrude" size="sm"><Link href="/admin/modelos/nuevo">Nuevo modelo</Link></Button>
+        <AdminNav />
         <form action={signOut} className="ml-auto flex items-center gap-3 text-sm text-muted-foreground">
           {admin.email}
           <Button type="submit" variant="outline" size="sm"><LogOut /> Salir</Button>
