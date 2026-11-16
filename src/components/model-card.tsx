@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Box } from "lucide-react";
 
+import { CardSpin } from "@/components/card-spin";
 import { Badge } from "@/components/ui/badge";
 import { licenses } from "@/lib/options";
 import type { Model } from "@/lib/types";
@@ -14,19 +15,21 @@ export function ModelCard({ model }: { model: Model }) {
     >
       <div className="relative aspect-square overflow-hidden border-b-2 border-foreground/10 bg-muted">
         <div className="print-bed absolute inset-0 opacity-70" />
-        {model.thumbnail_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={model.thumbnail_url}
-            alt={model.title}
-            loading="lazy"
-            className="relative size-full object-contain p-4 transition-transform duration-500 group-hover:scale-105 group-hover:-rotate-2"
-          />
-        ) : (
-          <div className="relative flex size-full items-center justify-center text-muted-foreground">
-            <Box className="size-12" />
-          </div>
-        )}
+        <CardSpin src={model.glb_url} alt={`Modelo 3D de ${model.title}`}>
+          {model.thumbnail_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={model.thumbnail_url}
+              alt={model.title}
+              loading="lazy"
+              className="relative size-full object-contain p-4 transition-transform duration-500 group-hover:scale-105 group-hover:-rotate-2"
+            />
+          ) : (
+            <div className="relative flex size-full items-center justify-center text-muted-foreground">
+              <Box className="size-12" />
+            </div>
+          )}
+        </CardSpin>
         <Badge variant="outline" className="absolute left-3 top-3 bg-background/80 backdrop-blur">
           {model.category}
         </Badge>

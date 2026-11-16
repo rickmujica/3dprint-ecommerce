@@ -10,7 +10,9 @@ const BASE_COLUMNS =
 // Columnas agregadas por migraciones posteriores, de la más vieja a la más nueva.
 const MULTICOLOR_COLUMNS = "multicolor_price, color_zones, colors_locked"; // 20261105000000_multicolor_pricing.sql
 const MATERIAL_COLUMNS = "allowed_materials"; // 20261105030000_material_types.sql
+const HERO_COLUMNS = "hero"; // 20261116000000_hero_model.sql
 const COLUMN_SETS = [
+  `${BASE_COLUMNS}, ${MULTICOLOR_COLUMNS}, ${MATERIAL_COLUMNS}, ${HERO_COLUMNS}`,
   `${BASE_COLUMNS}, ${MULTICOLOR_COLUMNS}, ${MATERIAL_COLUMNS}`,
   `${BASE_COLUMNS}, ${MULTICOLOR_COLUMNS}`,
   BASE_COLUMNS,
@@ -50,6 +52,7 @@ function normalize(m: Model): Model {
     color_zones: Array.isArray(m.color_zones) ? m.color_zones : [],
     colors_locked: Boolean(m.colors_locked),
     multicolor_price: m.multicolor_price ?? null,
+    hero: Boolean(m.hero),
     allowed_materials: Array.isArray(m.allowed_materials) && m.allowed_materials.length ? m.allowed_materials : null,
   };
 }

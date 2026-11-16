@@ -32,6 +32,8 @@ export type Model = {
   /** Tipos de filamento con los que se puede pedir. null = todos los disponibles. */
   allowed_materials: string[] | null;
   featured: boolean;
+  /** Es el modelo de la portada. Si ninguno lo es, se usa el destacado más reciente. */
+  hero?: boolean;
   published: boolean;
   created_at: string;
 };

@@ -30,6 +30,7 @@ export default async function AdminModelsPage() {
                 {m.color_zones?.length > 0 && ` · ${m.color_zones.length} zonas de color${m.colors_locked ? " (fijas)" : ""}`}
               </p>
             </div>
+            {m.hero && <Badge>Portada</Badge>}
             {m.featured && <Badge variant="accent">Destacado</Badge>}
             <Button asChild variant="ghost" size="icon" aria-label="Ver en la tienda">
               <Link href={`/modelos/${m.slug}`} target="_blank"><ExternalLink /></Link>
