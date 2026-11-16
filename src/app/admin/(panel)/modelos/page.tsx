@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Download, ExternalLink, Pencil } from "lucide-react";
 
 import { toggleModelPublished } from "@/app/actions/admin";
+import { RefreshCatalogButton } from "@/components/admin/refresh-catalog-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { requireAdmin } from "@/lib/auth";
@@ -16,7 +17,14 @@ export default async function AdminModelsPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-3xl font-bold">Modelos</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-3xl font-bold">Modelos</h1>
+        <RefreshCatalogButton />
+      </div>
+      <p className="text-sm text-muted-foreground">
+        Los cambios que guardás acá se ven en la tienda al instante. Si cargaste o editaste modelos directo en
+        Supabase, tocá «Actualizar catálogo».
+      </p>
       {error && <p className="text-destructive">{error.message}</p>}
       <ul className="divide-y-2 divide-foreground/10 rounded-xl border-2 border-foreground/10">
         {models.map((m) => (

@@ -18,8 +18,8 @@ export async function fetchPalette(): Promise<Filament[]> {
 }
 
 /**
- * Paleta de filamentos, cacheada hasta 1 h para las páginas públicas. En Workers `updateTag` no la invalida
- * (no hay tag cache), así que los formularios de pedido la refrescan en el navegador con /api/opciones.
+ * Paleta de filamentos, cacheada hasta 1 h para las páginas públicas. El admin la invalida al guardar
+ * (tag cache en D1); igual los formularios de pedido la refrescan en el navegador con /api/opciones.
  */
 export const getPalette = unstable_cache(fetchPalette, ["filament-palette"], {
   revalidate: 3600,

@@ -59,8 +59,16 @@ Para Next.js, Cloudflare recomienda **Workers con OpenNext** en lugar de Pages. 
 npx wrangler login
 npx wrangler r2 bucket create 3dprint-models
 npx wrangler r2 bucket create 3dprint-ecommerce-opennext-cache
+npx wrangler d1 create 3dprint-ecommerce-tag-cache   # pegar el database_id en wrangler.jsonc
 npm run deploy
 ```
+
+**Caché y cambios al instante.** Las páginas públicas se sirven desde caché (R2) y se regeneran solas cada 1 h.
+Cuando el admin guarda un modelo, filamentos o tipos, se borra el caché de la tienda (`src/lib/public-cache.ts`)
+y la próxima visita la regenera. Para que ese aviso llegue a todas las instancias del Worker, OpenNext guarda las
+revalidaciones en la base D1 `NEXT_TAG_CACHE_D1`; `opennextjs-cloudflare deploy` crea su tabla. Lo que se cargue
+directo en el SQL Editor de Supabase no pasa por el admin: para eso está el botón **Actualizar catálogo** en
+`/admin/modelos`.
 
 Las variables `NEXT_PUBLIC_*` se leen **al compilar**: tienen que estar en `.env.local` (deploy desde tu máquina) o en **Settings → Build → Variables and secrets** si conectás el repo con **Workers Builds**. Comandos en Workers Builds:
 

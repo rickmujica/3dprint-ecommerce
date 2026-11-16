@@ -1,6 +1,6 @@
 "use server";
 
-import { refresh, updateTag } from "next/cache";
+import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { requireAdmin } from "@/lib/auth";
@@ -10,6 +10,7 @@ import { defaultFilaments, normalizePalette, type Filament } from "@/lib/palette
 import { defaultMaterialTypes, normalizeMaterialTypes } from "@/lib/material-types";
 import { fetchMaterialTypes, fetchPalette } from "@/lib/palette-server";
 import { orderCode } from "@/lib/order-code";
+import { refreshCatalog, refreshPublicPages } from "@/lib/public-cache";
 import { isSafeKey, publicFileUrl } from "@/lib/r2";
 import type { ColorZone, LicenseId, OrderStatus, WaitlistEntry, WaitlistStatus } from "@/lib/types";
 import { slugify } from "@/lib/utils";
@@ -74,7 +75,7 @@ export async function createModel(_prev: AdminFormState, form: FormData): Promis
     return { error: error.code === "23505" ? "Ya existe un modelo con ese slug." : error.message };
   }
 
-  updateTag("models");
+  refreshCatalog();
   redirect("/admin/modelos");
 }
 
@@ -83,8 +84,7 @@ export async function toggleModelPublished(form: FormData) {
   const id = str(form, "id", 40);
   const published = form.get("published") === "true";
   const { data } = await supabase.from("models").update({ published }).eq("id", id).select("slug").single();
-  updateTag("models");
-  if (data) updateTag(`model:${data.slug}`);
+  refreshCatalog(data?.slug);
   refresh();
 }
 
@@ -157,8 +157,7 @@ export async function updateModel(_prev: AdminFormState, form: FormData): Promis
     .single();
   if (error) return { error: error.message };
 
-  updateTag("models");
-  updateTag(`model:${data.slug}`);
+  refreshCatalog(data.slug);
   refresh();
   return { ok: true };
 }
@@ -187,7 +186,7 @@ export async function updateFilaments(_prev: AdminFormState, form: FormData): Pr
 
   const { error } = await supabase.from("shop_settings").update({ filaments: palette }).eq("id", true);
   if (error) return { error: error.message };
-  updateTag("palette");
+  refreshPublicPages("palette");
   refresh();
   return { ok: true };
 }
@@ -224,7 +223,7 @@ export async function updateMaterialTypes(
 
   const { error } = await supabase.from("shop_settings").update({ material_types: types }).eq("id", true);
   if (error) return { error: error.message };
-  updateTag("palette");
+  refreshPublicPages("palette");
   refresh();
   return { ok: true };
 }
@@ -265,7 +264,7 @@ export async function updateMaterialColors(
 
   const { error } = await supabase.from("shop_settings").update({ material_types: types }).eq("id", true);
   if (error) return { error: error.message };
-  updateTag("palette");
+  refreshPublicPages("palette");
   refresh();
   return { ok: true };
 }
@@ -373,4 +372,11 @@ export async function signOut() {
   const { supabase } = await requireAdmin();
   await supabase.auth.signOut();
   redirect("/admin/login");
+}
+
+/** Botón "Actualizar catálogo": para cambios hechos fuera del admin (por ejemplo, en el SQL Editor de Supabase). */
+export async function refreshStorefront(): Promise<{ ok: boolean; at: string }> {
+  await requireAdmin();
+  refreshPublicPages("models", "palette");
+  return { ok: true, at: new Date().toISOString() };
 }
