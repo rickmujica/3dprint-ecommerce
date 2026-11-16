@@ -1,6 +1,6 @@
 -- Modelos que la tienda ya imprime y vende, con licencia que permite vender impresiones.
 -- Los GLB y miniaturas están en public/catalogo (se sirven con el sitio, no hace falta subirlos a R2).
--- 1) Correr antes supabase/migrations/20261116000000_license_cc_by_nd.sql (en otra ejecución).
+-- 1) Correr antes supabase/migrations/20261116010000_license_cc_by_nd.sql (en otra ejecución).
 -- 2) Pegar esto en el SQL Editor de Supabase. Precios estimados por peso; se ajustan en /admin/modelos.
 insert into public.models
   (slug, title, description, category, tags, license, author_name, author_url, source_url, glb_url, thumbnail_url, size_x_mm, size_y_mm, size_z_mm, base_price, featured, published)
