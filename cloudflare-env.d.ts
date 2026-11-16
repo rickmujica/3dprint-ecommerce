@@ -4,6 +4,7 @@
 interface __BaseEnv_CloudflareEnv {
 	MODELS: R2Bucket;
 	NEXT_INC_CACHE_R2_BUCKET: R2Bucket;
+	NEXT_TAG_CACHE_D1: D1Database;
 	ASSETS: Fetcher;
 	WORKER_SELF_REFERENCE: Fetcher /* 3dprint-ecommerce */;
 }
