@@ -4,76 +4,88 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Tema: base blanco/negro puro con acentos "filamento" (cian, violeta, magenta, lima).
+ * Tema Mimi3D: crema, rosa y chocolate, los colores del logo.
+ * Claro: fondo crema, texto chocolate, botones rosa fuerte. Oscuro: fondo chocolate, texto crema, botones rosa pastel.
+ * Contraste (WCAG): texto/fondo 14:1 en claro y 16:1 en oscuro; primary con su texto ≥ 5:1 en ambos.
  * Los tokens siguen la convención de shadcn/ui, así `npx shadcn add` funciona sin tocar nada.
  */
 :root {
-  --radius: 0.875rem;
+  --radius: 1rem;
 
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --background: oklch(0.983 0.009 52); /* #FFF8F4 crema */
+  --foreground: oklch(0.28 0.043 38); /* #3B2119 chocolate amargo */
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.28 0.043 38);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.55 0.26 288);
-  --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.96 0.01 288);
-  --secondary-foreground: oklch(0.25 0.05 288);
-  --muted: oklch(0.965 0 0);
-  --muted-foreground: oklch(0.48 0 0);
-  --accent: oklch(0.88 0.21 128);
-  --accent-foreground: oklch(0.2 0.05 128);
-  --destructive: oklch(0.6 0.24 25);
-  --border: oklch(0.9 0 0);
-  --input: oklch(0.9 0 0);
-  --ring: oklch(0.55 0.26 288);
+  --popover-foreground: oklch(0.28 0.043 38);
+  --primary: oklch(0.545 0.158 7.7); /* #B83E5F rosa frambuesa */
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.948 0.022 4); /* #FCE8EC */
+  --secondary-foreground: oklch(0.35 0.06 5);
+  --muted: oklch(0.95 0.014 51);
+  --muted-foreground: oklch(0.513 0.036 38); /* #7A6058 */
+  --accent: oklch(0.887 0.063 3.6); /* #FFC9D5 rosa pastel */
+  --accent-foreground: oklch(0.28 0.043 38);
+  --destructive: oklch(0.58 0.2 27);
+  --border: oklch(0.901 0.02 50);
+  --input: oklch(0.88 0.025 50);
+  --ring: oklch(0.545 0.158 7.7);
 
-  /* Colores de marca: los "filamentos" */
-  --brand-cyan: oklch(0.72 0.17 220);
-  --brand-violet: oklch(0.55 0.26 288);
-  --brand-magenta: oklch(0.63 0.27 350);
-  --brand-lime: oklch(0.88 0.21 128);
+  /* Colores de marca (los del logo) */
+  --brand-pink: oklch(0.762 0.124 7); /* #F48FA4 */
+  --brand-rose: oklch(0.666 0.155 12); /* #E2667A, el "3D" */
+  --brand-chocolate: oklch(0.412 0.077 38); /* #6E3B2B, el "Mimi" */
+  --brand-cream: oklch(0.967 0.019 55); /* #FFF1E8 */
 
-  /* Sombra extruida: el borde "duro" que da el efecto 3D */
-  --extrude: oklch(0.145 0 0);
-  --glow: oklch(0.55 0.26 288 / 0.25);
-  --grid-line: oklch(0.145 0 0 / 0.07);
+  /* Degradé de títulos: rosa → frambuesa → chocolate */
+  --grad-1: oklch(0.666 0.155 12);
+  --grad-2: oklch(0.545 0.158 7.7);
+  --grad-3: oklch(0.412 0.077 38);
+
+  /* Sombra extruida: el borde "duro" que da el efecto 3D, en chocolate */
+  --extrude: oklch(0.412 0.077 38);
+  --glow: oklch(0.666 0.155 12 / 0.3);
+  --grid-line: oklch(0.545 0.158 7.7 / 0.08);
 }
 
 .dark {
-  --background: oklch(0 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.12 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.12 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.7 0.22 292);
-  --primary-foreground: oklch(0.1 0 0);
-  --secondary: oklch(0.2 0.03 288);
-  --secondary-foreground: oklch(0.95 0.02 288);
-  --muted: oklch(0.18 0 0);
-  --muted-foreground: oklch(0.7 0 0);
-  --accent: oklch(0.9 0.22 128);
-  --accent-foreground: oklch(0.15 0.04 128);
-  --destructive: oklch(0.68 0.22 22);
-  --border: oklch(1 0 0 / 0.14);
-  --input: oklch(1 0 0 / 0.18);
-  --ring: oklch(0.7 0.22 292);
+  --background: oklch(0.203 0.018 37); /* #1E1411 chocolate oscuro */
+  --foreground: oklch(0.96 0.016 53); /* #FBEFE8 crema */
+  --card: oklch(0.242 0.024 40);
+  --card-foreground: oklch(0.96 0.016 53);
+  --popover: oklch(0.242 0.024 40);
+  --popover-foreground: oklch(0.96 0.016 53);
+  --primary: oklch(0.784 0.111 5.7); /* #F59AAE rosa pastel */
+  --primary-foreground: oklch(0.222 0.037 31);
+  --secondary: oklch(0.291 0.032 37);
+  --secondary-foreground: oklch(0.96 0.016 53);
+  --muted: oklch(0.259 0.024 40);
+  --muted-foreground: oklch(0.76 0.032 41); /* #C4ABA2 */
+  --accent: oklch(0.887 0.063 3.6);
+  --accent-foreground: oklch(0.222 0.037 31);
+  --destructive: oklch(0.7 0.17 25);
+  --border: oklch(0.96 0.016 53 / 0.14);
+  --input: oklch(0.96 0.016 53 / 0.2);
+  --ring: oklch(0.784 0.111 5.7);
 
-  --brand-cyan: oklch(0.8 0.15 215);
-  --brand-violet: oklch(0.7 0.22 292);
-  --brand-magenta: oklch(0.72 0.24 350);
-  --brand-lime: oklch(0.9 0.22 128);
+  --brand-pink: oklch(0.807 0.099 5);
+  --brand-rose: oklch(0.724 0.137 11);
+  --brand-chocolate: oklch(0.588 0.085 41);
+  --brand-cream: oklch(0.96 0.016 53);
 
-  --extrude: oklch(0.7 0.22 292);
-  --glow: oklch(0.7 0.22 292 / 0.35);
-  --grid-line: oklch(1 0 0 / 0.08);
+  /* En oscuro el degradé va de crema rosado a rosa, para que se lea sobre chocolate */
+  --grad-1: oklch(0.9 0.05 10);
+  --grad-2: oklch(0.807 0.099 5);
+  --grad-3: oklch(0.724 0.137 11);
+
+  --extrude: oklch(0.784 0.111 5.7);
+  --glow: oklch(0.784 0.111 5.7 / 0.3);
+  --grid-line: oklch(0.96 0.016 53 / 0.07);
 }
 
 @theme inline {
   --font-sans: var(--font-geist);
-  --font-display: var(--font-space-grotesk);
+  --font-display: var(--font-fredoka);
   --font-mono: var(--font-geist-mono);
 
   --radius-sm: calc(var(--radius) - 4px);
@@ -100,10 +112,10 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  --color-brand-cyan: var(--brand-cyan);
-  --color-brand-violet: var(--brand-violet);
-  --color-brand-magenta: var(--brand-magenta);
-  --color-brand-lime: var(--brand-lime);
+  --color-brand-pink: var(--brand-pink);
+  --color-brand-rose: var(--brand-rose);
+  --color-brand-chocolate: var(--brand-chocolate);
+  --color-brand-cream: var(--brand-cream);
   --color-extrude: var(--extrude);
 }
 
@@ -124,24 +136,20 @@
   }
 }
 
-/* Texto con degradé de filamento */
+/* Texto con degradé de marca (rosa → chocolate; en oscuro, crema → rosa) */
 @utility text-filament {
-  background-image: linear-gradient(
-    100deg,
-    var(--brand-cyan),
-    var(--brand-violet) 45%,
-    var(--brand-magenta)
-  );
+  background-image: linear-gradient(100deg, var(--grad-1), var(--grad-2) 50%, var(--grad-3));
   background-clip: text;
   color: transparent;
 }
 
+/* Fondo de marca: siempre lo bastante oscuro para texto blanco (≥ 4,3:1) en ambos modos */
 @utility bg-filament {
   background-image: linear-gradient(
     100deg,
-    var(--brand-cyan),
-    var(--brand-violet) 45%,
-    var(--brand-magenta)
+    oklch(0.597 0.155 8.3),
+    oklch(0.512 0.141 6.8) 50%,
+    oklch(0.412 0.077 38)
   );
 }
 
@@ -185,7 +193,7 @@
 
 model-viewer {
   --poster-color: transparent;
-  --progress-bar-color: var(--brand-violet);
+  --progress-bar-color: var(--brand-rose);
   width: 100%;
   height: 100%;
 }

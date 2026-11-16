@@ -1,23 +1,36 @@
 import { cn } from "@/lib/utils";
 import { site } from "@/lib/site";
 
-/** Cubo isométrico con las tres caras en los colores de filamento. */
+/** Logo de Mimi3D (la impresora que dibuja un corazón). Archivos en public/brand/. */
 export function LogoMark({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 32 32" aria-hidden className={cn("size-8", className)}>
-      <path d="M16 2 29 9.5 16 17 3 9.5Z" fill="var(--brand-cyan)" />
-      <path d="M3 9.5 16 17v14L3 23.5Z" fill="var(--brand-violet)" />
-      <path d="M29 9.5 16 17v14l13-7.5Z" fill="var(--brand-magenta)" />
-      <path d="M16 2 29 9.5v14L16 31 3 23.5v-14Z" fill="none" stroke="var(--foreground)" strokeWidth="1.5" strokeLinejoin="round" />
-    </svg>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/brand/mimi3d-logo-128.png"
+      srcSet="/brand/mimi3d-logo-128.png 1x, /brand/mimi3d-logo-256.png 2x"
+      alt=""
+      aria-hidden
+      width={128}
+      height={128}
+      className={cn("size-11 shrink-0 drop-shadow-[2px_2px_0_var(--extrude)] transition-transform hover:-rotate-6", className)}
+    />
   );
 }
 
+/** Logo + nombre: "Mimi" en chocolate y "3D" en rosa, como en el logo. */
 export function Logo({ className }: { className?: string }) {
+  const match = site.name.match(/^(.*?)(3D)$/i);
   return (
-    <span className={cn("inline-flex items-center gap-2 font-display text-xl font-bold tracking-tight", className)}>
+    <span className={cn("inline-flex items-center gap-2 font-display text-2xl font-semibold tracking-tight", className)}>
       <LogoMark />
-      {site.name}
+      {match ? (
+        <span>
+          {match[1]}
+          <span className="text-primary">{match[2]}</span>
+        </span>
+      ) : (
+        site.name
+      )}
     </span>
   );
 }
