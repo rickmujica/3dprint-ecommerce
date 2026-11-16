@@ -98,11 +98,14 @@ def main():
     web = full.copy()
     web.merge_vertices()
     tris_in = len(web.faces)
-    if tris_in > a.max_tris:
-        import fast_simplification
+    import fast_simplification
 
-        v, f = fast_simplification.simplify(web.vertices.astype(np.float32), web.faces.astype(np.int32), 1 - a.max_tris / tris_in)
-        web = trimesh.Trimesh(v, f, process=False)
+    for _ in range(4):  # a veces queda por encima del objetivo: repetir
+        n = len(web.faces)
+        if n <= a.max_tris * 1.1:
+            break
+        v, f = fast_simplification.simplify(web.vertices.astype(np.float32), web.faces.astype(np.int32), 1 - a.max_tris / n)
+        web = trimesh.Trimesh(v, f, process=True)
     # Z arriba (mm) -> Y arriba (m), como prepare-model.ts
     rot = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, -1, 0, 0], [0, 0, 0, 1]], dtype=float)
     web.apply_transform(rot)
