@@ -22,8 +22,8 @@ export default async function HomePage() {
     <>
       <section className="relative overflow-hidden">
         <div className="print-bed absolute inset-0 -z-10 [mask-image:linear-gradient(to_bottom,black,transparent)]" />
-        <div className="absolute -left-32 top-10 -z-10 size-96 rounded-full bg-brand-cyan/20 blur-3xl" />
-        <div className="absolute -right-24 top-40 -z-10 size-96 rounded-full bg-brand-magenta/20 blur-3xl" />
+        <div className="absolute -left-32 top-10 -z-10 size-96 rounded-full bg-brand-pink/25 blur-3xl" />
+        <div className="absolute -right-24 top-40 -z-10 size-96 rounded-full bg-brand-chocolate/15 blur-3xl" />
 
         <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 md:grid-cols-2 md:py-24">
           <div className="space-y-6">
@@ -125,7 +125,7 @@ export default async function HomePage() {
             <p className="text-lg text-white/85">
               Mandanos una foto, un boceto o una descripción. Lo modelamos, te mostramos una vista previa y lo imprimimos.
             </p>
-            <Button asChild size="lg" className="border-2 border-black bg-white text-black shadow-[4px_4px_0_0_#000] hover:bg-white/90">
+            <Button asChild size="lg" className="border-2 border-brand-chocolate bg-brand-cream text-[#3b2119] shadow-[4px_4px_0_0_#3b2119] hover:bg-white">
               <Link href="/pedido-personalizado">
                 <Wand2 /> Pedir un diseño a medida
               </Link>

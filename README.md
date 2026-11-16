@@ -1,9 +1,9 @@
-# Capa3D · ecommerce de impresiones 3D
+# Mimi3D · ecommerce de impresiones 3D
 
 Catálogo de modelos 3D con visor interactivo, pedidos de impresión y pedidos personalizados.
 Next.js 16 corriendo en **Cloudflare Workers** (OpenNext), con **Supabase** (base de datos y login) y **Cloudflare R2** (archivos 3D).
 
-> El nombre "Capa3D" es provisorio: se cambia en `src/lib/site.ts`.
+> El nombre de la tienda se cambia en `src/lib/site.ts`; el logo y los íconos están en `public/brand/` y `src/app/` (`icon.png`, `apple-icon.png`, `favicon.ico`).
 
 ## Qué incluye
 

@@ -1,6 +1,6 @@
 // Datos del sitio. Cambiá el nombre y textos acá.
 export const site = {
-  name: "Capa3D",
+  name: "Mimi3D",
   tagline: "Impresiones 3D a pedido",
   description:
     "Catálogo de modelos 3D listos para imprimir en PLA, PETG, TPU o resina. Elegí un modelo, configurá material y color, o pedí un diseño personalizado.",
