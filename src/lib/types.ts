@@ -1,4 +1,4 @@
-export type LicenseId = "cc0" | "cc-by" | "cc-by-sa" | "commercial" | "own" | "permission";
+export type LicenseId = "cc0" | "cc-by" | "cc-by-sa" | "cc-by-nd" | "commercial" | "own" | "permission";
 
 export type Model = {
   id: string;
