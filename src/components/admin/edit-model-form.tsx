@@ -322,7 +322,20 @@ export function EditModelForm({
           <label className="flex items-center gap-2">
             <input type="checkbox" name="featured" defaultChecked={model.featured} className="size-4 accent-primary" /> Destacado
           </label>
+          {/* Sin la columna (migración 20261116000000_hero_model.sql sin correr) no se ofrece. */}
+          {model.hero !== undefined && (
+            <label className="flex items-center gap-2" title="Se muestra en grande en la página de inicio. Reemplaza al que estaba.">
+              <input type="hidden" name="hero_supported" value="1" />
+              <input type="checkbox" name="hero" defaultChecked={model.hero} className="size-4 accent-primary" /> Portada (hero)
+            </label>
+          )}
         </div>
+        {model.hero !== undefined && (
+          <p className="-mt-2 text-xs text-muted-foreground">
+            Portada: es el modelo grande del inicio, y solo puede haber uno. Si ninguno está marcado, se muestra el destacado
+            más reciente.
+          </p>
+        )}
 
         <FormError message={state.error} />
         {state.ok && <p role="status" className="text-sm font-medium text-primary">Cambios guardados.</p>}

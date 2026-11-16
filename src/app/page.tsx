@@ -16,7 +16,8 @@ export const revalidate = 3600;
 export default async function HomePage() {
   const [models, palette, materialTypes] = await Promise.all([getPublishedModels(), getPalette(), getMaterialTypes()]);
   const featured = models.filter((m) => m.featured);
-  const hero = featured[0] ?? models[0];
+  // El modelo elegido para la portada en el admin; si no hay, el destacado más reciente.
+  const hero = models.find((m) => m.hero) ?? featured[0] ?? models[0];
 
   return (
     <>

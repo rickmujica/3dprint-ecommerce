@@ -125,9 +125,18 @@ export async function updateModel(_prev: AdminFormState, form: FormData): Promis
     ? null
     : allowed.filter((id) => materialTypes.some((t) => t.id === id));
 
+  // Portada: solo un modelo a la vez, así que primero se desmarca el anterior.
+  const heroSupported = form.has("hero_supported");
+  const hero = heroSupported && form.get("hero") === "on";
+  if (hero) {
+    const { error: heroError } = await supabase.from("models").update({ hero: false }).eq("hero", true).neq("id", id);
+    if (heroError) return { error: heroError.message };
+  }
+
   const { data, error } = await supabase
     .from("models")
     .update({
+      ...(heroSupported ? { hero } : {}),
       title,
       description: str(form, "description", 4000),
       category: str(form, "category", 60) || "General",

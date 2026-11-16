@@ -17,6 +17,10 @@ type Props = {
   tint?: string | null;
   /** Color por material del GLB (preview de un modelo multicolor por zonas). Tiene prioridad sobre `tint`. */
   materialColors?: Record<string, string> | null;
+  /** Dibuja la cama de impresión y el brillo de fondo. Apagado, el visor es transparente. */
+  background?: boolean;
+  /** Se llama cuando el modelo terminó de cargar. */
+  onLoaded?: () => void;
 };
 
 type ModelViewerElement = HTMLElement & {
@@ -41,6 +45,8 @@ export function ModelViewer({
   interactive = true,
   tint,
   materialColors,
+  background = true,
+  onLoaded,
 }: Props) {
   const ref = useRef<ModelViewerElement>(null);
   const [ready, setReady] = useState(false);
@@ -54,10 +60,18 @@ export function ModelViewer({
     };
   }, []);
 
+  const onLoadedRef = useRef(onLoaded);
+  useEffect(() => {
+    onLoadedRef.current = onLoaded;
+  }, [onLoaded]);
+
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const onLoad = () => setLoaded(true);
+    const onLoad = () => {
+      setLoaded(true);
+      onLoadedRef.current?.();
+    };
     el.addEventListener("load", onLoad);
     return () => el.removeEventListener("load", onLoad);
   }, [ready]);
@@ -86,9 +100,13 @@ export function ModelViewer({
 
   return (
     <div className={cn("relative isolate overflow-hidden", className)}>
-      {/* Cama de impresión de fondo */}
-      <div className="print-bed absolute inset-0 -z-10 [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_75%)]" />
-      <div className="absolute inset-x-[15%] bottom-[12%] -z-10 h-1/3 rounded-full bg-primary/20 blur-3xl" />
+      {background && (
+        <>
+          {/* Cama de impresión de fondo */}
+          <div className="print-bed absolute inset-0 -z-10 [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_75%)]" />
+          <div className="absolute inset-x-[15%] bottom-[12%] -z-10 h-1/3 rounded-full bg-primary/20 blur-3xl" />
+        </>
+      )}
       {ready ? (
         <model-viewer
           ref={ref}
@@ -110,11 +128,11 @@ export function ModelViewer({
           camera-orbit="35deg 70deg 115%"
           disable-pan=""
         />
-      ) : (
+      ) : background ? (
         <div className="flex h-full items-center justify-center text-muted-foreground">
           <Box className="size-10 animate-pulse" />
         </div>
-      )}
+      ) : null}
       {interactive && loaded && (
         <span className="pointer-events-none absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-background/70 px-2.5 py-1 text-xs text-muted-foreground backdrop-blur">
           <RotateCw className="size-3" /> Arrastrá para girar
