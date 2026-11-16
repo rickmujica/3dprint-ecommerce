@@ -23,6 +23,7 @@ export const licenses: Record<LicenseId, { label: string; short: string; url?: s
   cc0: { label: "Dominio público (CC0)", short: "CC0", url: "https://creativecommons.org/publicdomain/zero/1.0/", needsAttribution: false },
   "cc-by": { label: "Creative Commons Atribución (CC BY 4.0)", short: "CC BY", url: "https://creativecommons.org/licenses/by/4.0/", needsAttribution: true },
   "cc-by-sa": { label: "Creative Commons Atribución-CompartirIgual (CC BY-SA 4.0)", short: "CC BY-SA", url: "https://creativecommons.org/licenses/by-sa/4.0/", needsAttribution: true },
+  "cc-by-nd": { label: "Creative Commons Atribución-SinDerivadas (CC BY-ND 4.0)", short: "CC BY-ND", url: "https://creativecommons.org/licenses/by-nd/4.0/", needsAttribution: true },
   commercial: { label: "Licencia comercial del autor", short: "Comercial", needsAttribution: true },
   own: { label: "Diseño propio", short: "Propio", needsAttribution: false },
   permission: { label: "Uso con permiso del autor", short: "Con permiso", needsAttribution: true },
