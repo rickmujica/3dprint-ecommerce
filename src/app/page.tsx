@@ -105,8 +105,8 @@ export default async function HomePage() {
         <ol className="grid gap-6 md:grid-cols-3">
           {[
             { icon: Layers, title: "Elegí y configurá", text: "Mirá el modelo en 3D, elegí material, color y tamaño." },
-            { icon: MessageCircle, title: "Te cotizamos", text: "Te escribimos con precio y plazo. Recién ahí confirmás." },
-            { icon: Package, title: "Imprimimos y entregamos", text: "Lo imprimimos, lo revisamos y coordinamos la entrega." },
+            { icon: MessageCircle, title: "Te cotizamos", text: "Te escribimos con precio y plazo. Recién ahí confirmás abonando una seña." },
+            { icon: Package, title: "Imprimimos y entregamos", text: "Lo imprimimos, y coordinamos la entrega." },
           ].map((step, i) => (
             <li key={step.title} className="relative rounded-2xl border-2 border-foreground/10 bg-card p-6">
               <span className="text-filament absolute right-5 top-3 font-display text-6xl font-bold opacity-80">{i + 1}</span>
