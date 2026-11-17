@@ -12,7 +12,7 @@ export function LogoMark({ className }: { className?: string }) {
       aria-hidden
       width={183}
       height={128}
-      className={cn("h-11 w-auto shrink-0 drop-shadow-[2px_2px_0_var(--extrude)] transition-transform hover:-rotate-6", className)}
+      className={cn("h-11 w-auto shrink-0 transition-transform hover:-rotate-6", className)}
     />
   );
 }
